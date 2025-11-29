@@ -1,0 +1,204 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Uji Coba Kamera LPR (Teks Otomatis + QR Manual)</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" rel="stylesheet">
+    <style>
+        body { background-color: #f4f7f6; display: flex; align-items: center; justify-content: center; min-height: 100vh; padding: 2rem; }
+        .simulator { max-width: 650px; width: 100%; }
+        .card { border: none; border-radius: 1rem; box-shadow: 0 10px 30px rgba(0,0,0,0.07); }
+        
+        /* 1. Wadah Video Feed Kamera */
+        #video-feed {
+            width: 100%;
+            border-radius: 0.5rem;
+            border: 1px solid #eee;
+            margin-bottom: 1rem;
+            background: #000;
+        }
+        
+        /* Canvas untuk snapshot (kita sembunyikan) */
+        #snapshot-canvas { display: none; }
+        
+        #ocr-status { font-weight: 500; }
+        #response-box { background-color: #212529; color: #f8f9fa; padding: 1.5rem; border-radius: 0.5rem; font-family: 'Courier New', Courier, monospace; min-height: 100px; white-space: pre-wrap; word-wrap: break-word; }
+        .input-group-text { width: 45px; justify-content: center; }
+    </style>
+</head>
+<body>
+    <div class="simulator">
+        <div class="card">
+            <div class="card-body p-4 p-md-5">
+                
+                <h2 class="text-center mb-4 fw-bold">Simulasi Gerbang LPR</h2>
+                
+                <video id="video-feed" autoplay playsinline></video>
+                <canvas id="snapshot-canvas"></canvas>
+                
+                <div class="d-grid mb-3">
+                    <button class.="btn btn-primary" id="scan-plate-btn">
+                        <i class="fas fa-camera me-2"></i> Ambil Foto & Scan Plat Nomor
+                    </button>
+                </div>
+                <div class="alert alert-warning text-center" id="ocr-status">
+                    <i class="fas fa-spinner fa-spin me-2"></i>Memuat Tesseract.js (AI)...
+                </div>
+                <hr class="my-4">
+
+                <div class="mb-3">
+                    <label for="license_plate" class="form-label fw-bold">1. Hasil LPR (Otomatis dari Tesseract)</label>
+                    <div class="input-group">
+                        <span class="input-group-text"><i class="fas fa-car-side"></i></span>
+                        <input type="text" class="form-control form-control-lg" id="license_plate" placeholder="Klik tombol 'Scan' di atas..." readonly>
+                    </div>
+                </div>
+                <div class="mb-3">
+                    <label for="qr_code" class="form-label fw-bold">2. Hasil Scan QR (Ketik Manual)</label>
+                    <div class="input-group">
+                        <span class="input-group-text"><i class="fas fa-qrcode"></i></span>
+                        <input type="text" class="form-control form-control-lg" id="qr_code" placeholder="Ketik kode QR di sini...">
+                    </div>
+                </div>
+                
+                <div class="row g-2 mt-4">
+                    <div class="col-6 d-grid">
+                        <button class="btn btn-success btn-lg" type="button" onclick="kirimRequest('check-in')">
+                            <i class="fas fa-arrow-right-to-bracket me-2"></i> CHECK-IN
+                        </button>
+                    </div>
+                    <div class="col-6 d-grid">
+                        <button class="btn btn-danger btn-lg" type="button" onclick="kirimRequest('check-out')">
+                            <i class="fas fa-arrow-right-from-bracket me-2"></i> CHECK-OUT
+                        </button>
+                    </div>
+                </div>
+                
+                <hr class="my-4">
+                
+                <h4 class="mb-3 fw-bold">Respons dari API Laravel:</h4>
+                <div id="response-box">Menunggu panggilan API...</div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+    <script src='https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js'></script>
+    
+    <script>
+        // === KONFIGURASI ===
+        const videoEl = document.getElementById('video-feed');
+        const canvasEl = document.getElementById('snapshot-canvas');
+        const ocrStatusEl = $('#ocr-status');
+        const plateInputEl = $('#license_plate');
+        const scanBtn = $('#scan-plate-btn');
+
+        let tesseractWorker = null;
+
+        // ===================================
+        // LOGIKA LPR (TESSERACT.JS)
+        // ===================================
+        async function initializeTesseract() {
+            ocrStatusEl.html('<i class="fas fa-spinner fa-spin me-2"></i>Memuat Tesseract.js (AI)...');
+            tesseractWorker = await Tesseract.createWorker('eng', 1, {
+                logger: m => console.log(m) // Tampilkan progres di console
+            });
+            ocrStatusEl.removeClass('alert-warning').addClass('alert-info').html('<i class="fas fa-video me-2"></i>Kamera & AI Siap. Klik tombol Scan.');
+        }
+
+        async function scanPlate() {
+            if (!tesseractWorker) {
+                alert('Tesseract (AI) belum siap, mohon tunggu.');
+                return;
+            }
+            
+            ocrStatusEl.removeClass('alert-info').addClass('alert-warning').html('<i class="fas fa-spinner fa-spin me-2"></i>Mengambil foto...');
+            
+            // 1. Ambil snapshot dari video
+            canvasEl.width = videoEl.videoWidth;
+            canvasEl.height = videoEl.videoHeight;
+            canvasEl.getContext('2d').drawImage(videoEl, 0, 0, canvasEl.width, canvasEl.height);
+            
+            ocrStatusEl.html('<i class="fas fa-spinner fa-spin me-2"></i>Memproses LPR (Membaca Teks)...');
+            
+            // 2. Kirim snapshot ke Tesseract
+            try {
+                const { data: { text } } = await tesseractWorker.recognize(canvasEl);
+                
+                // 3. Bersihkan teks (hapus spasi, ganti O jadi 0, dll - bisa dikembangkan)
+                let cleanedText = text.replace(/[^a-zA-Z0-9]/g, '').toUpperCase();
+                
+                plateInputEl.val(cleanedText);
+                ocrStatusEl.removeClass('alert-warning').addClass('alert-success').html('<i class="fas fa-check-circle me-2"></i>Scan Selesai: ' + cleanedText);
+
+            } catch (err) {
+                console.error(err);
+                ocrStatusEl.removeClass('alert-warning').addClass('alert-danger').html('<i class="fas fa-exclamation-triangle me-2"></i>Gagal melakukan OCR.');
+            }
+        }
+
+        // ===================================
+        // LOGIKA KAMERA (WEBCAM)
+        // ===================================
+        async function startCamera() {
+            try {
+                const stream = await navigator.mediaDevices.getUserMedia({ 
+                    video: { facingMode: 'environment' } // Prioritaskan kamera belakang jika ada
+                });
+                videoEl.srcObject = stream;
+            } catch (err) {
+                console.error("Error memulai kamera:", err);
+                ocrStatusEl.removeClass('alert-warning').addClass('alert-danger').html('<i class="fas fa-exclamation-triangle me-2"></i>ERROR: Kamera tidak diizinkan atau tidak ditemukan.');
+            }
+        }
+
+        // ===================================
+        // LOGIKA AJAX (PANGGIL API LARAVEL)
+        // ===================================
+        function kirimRequest(tipe) {
+            var qr = $('#qr_code').val();
+            var plat = $('#license_plate').val();
+            if (!qr || !plat) { alert('Kedua data (QR dan Plat) harus terisi!'); return; }
+            
+            var apiUrl = 'http://127.0.0.1:8000/api/gate/' + tipe; 
+            var dataRequest = { qr_code: qr, license_plate: plat };
+            
+            var responseBox = $('#response-box');
+            responseBox.css('color', '#ffa500').text('Memanggil API ' + tipe + '...');
+            
+            $.ajax({
+                url: apiUrl,
+                type: 'GET',
+                data: dataRequest,
+                dataType: 'json',
+                success: function(response) {
+                    responseBox.css('color', '#00ff00');
+                    responseBox.text(JSON.stringify(response, null, 2));
+                    $('#qr_code').val('');
+                    $('#license_plate').val('');
+                    ocrStatusEl.removeClass('alert-success').addClass('alert-info').html('<i class="fas fa-video me-2"></i>Kamera & AI Siap. Klik tombol Scan.');
+                },
+                error: function(xhr, status, error) {
+                    responseBox.css('color', '#ff4136');
+                    if (xhr.responseJSON) {
+                        responseBox.text(JSON.stringify(xhr.responseJSON, null, 2));
+                    } else {
+                        responseBox.text('Error: Gagal terhubung ke API. Pastikan "php artisan serve" berjalan.');
+                    }
+                }
+            });
+        }
+
+        // ===================================
+        // INIT (Jalankan saat halaman dimuat)
+        // ===================================
+        $(document).ready(function() {
+            startCamera();
+            initializeTesseract();
+            scanBtn.on('click', scanPlate);
+        });
+    </script>
+</body>
+</html>
