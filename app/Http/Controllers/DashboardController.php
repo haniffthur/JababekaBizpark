@@ -51,7 +51,8 @@ class DashboardController extends Controller
             $chartCheckOuts = $logActivity->pluck('check_outs');
             
             // Log terbaru (5 baris pertama)
-            $recentLogs = GateLog::with('truck.user')->latest()->take(5)->get();
+         // Tambahkan 'user' di array with()
+$recentLogs = GateLog::with(['truck.user', 'user'])->latest()->take(5)->get();
 
             return view('admin.dashboard.index', compact('chartLabels', 'chartCheckIns', 'chartCheckOuts', 'emptyStats', 'recentLogs'));
 
@@ -84,7 +85,7 @@ class DashboardController extends Controller
         ];
 
         // 2. Log terbaru (hanya 5)
-        $recentLogs = GateLog::with('truck.user')->latest()->take(5)->get();
+        $recentLogs = GateLog::with('truck.user','user')->latest()->take(5)->get();
 
         return response()->json([
             'stats' => $stats,

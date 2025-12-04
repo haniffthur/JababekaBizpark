@@ -75,7 +75,7 @@ class MemberController extends Controller
 
         foreach ($plates as $name => $plate) {
             if (!empty($plate)) {
-                $customCode = now()->format('dmY') . strtoupper(Str::random(8));
+                $customCode = now()->format('dmY') . strtoupper(Str::random(2));
                 PersonalQr::create([
                     'user_id' => $user->id,
                     'name' => $name,

@@ -115,13 +115,27 @@
                                         <i class="fas fa-circle {{ $log->status == 'Berhasil Masuk' ? 'text-success' : ($log->status == 'Berhasil Keluar' ? 'text-info' : 'text-danger') }}"></i>
                                     </td>
                                     <td>
-                                        <strong>{{ $log->truck->license_plate ?? 'N/A' }}</strong><br>
-                                        <small>{{ $log->status }}</small>
-                                    </td>
-                                    <td class="text-right pr-4">
-                                        {{ $log->created_at->diffForHumans() }}<br>
-                                        <small>{{ $log->truck->user->name ?? 'Guest' }}</small>
-                                    </td>
+    {{-- LOGIKA IF/ELSE: Cek Truck ID atau License Plate langsung --}}
+    @if($log->truck_id)
+        <strong>{{ $log->truck->license_plate ?? 'N/A' }}</strong>
+    @else
+        <strong>{{ $log->license_plate ?? 'N/A' }}</strong>
+    @endif
+    <br>
+    <small>{{ $log->status }}</small>
+</td>
+<td class="text-right pr-4">
+    {{ $log->created_at->diffForHumans() }}<br>
+    
+    {{-- LOGIKA USER --}}
+    <small>
+        @if($log->truck_id)
+            {{ $log->truck->user->name ?? 'Guest' }}
+        @else
+            {{ $log->user->name ?? 'Guest' }}
+        @endif
+    </small>
+</td>
                                 </tr>
                             @empty
                                 <tr><td colspan="3" class="text-center p-4">Memuat data...</td></tr>
@@ -184,10 +198,25 @@ function updateAdminDashboard() {
                 var statusClass = log.status.includes('Berhasil Masuk') ? 'text-success' : (log.status.includes('Berhasil Keluar') ? 'text-info' : 'text-danger');
                 var timeAgo = formatTimeAgo(log.created_at);
 
+                // --- LOGIKA BARU: Tentukan Plat & Member ---
+                var plateNumber = 'N/A';
+                var memberName = 'Guest';
+
+                if (log.truck_id && log.truck) {
+                    // Log Truk
+                    plateNumber = log.truck.license_plate;
+                    memberName = (log.truck.user ? log.truck.user.name : 'Guest');
+                } else {
+                    // Log Pribadi (Cek license_plate langsung)
+                    plateNumber = log.license_plate || 'N/A';
+                    memberName = (log.user ? log.user.name : 'Guest');
+                }
+                // --------------------------------------------
+
                 var row = '<tr>' +
                     '<td class="pl-4"><i class="fas fa-circle ' + statusClass + '"></i></td>' +
-                    '<td><strong>' + (log.truck ? log.truck.license_plate : 'N/A') + '</strong><br><small>' + log.status + '</small></td>' +
-                    '<td class="text-right pr-4">' + timeAgo + '<br><small>' + (log.truck && log.truck.user ? log.truck.user.name : 'Guest') + '</small></td>' +
+                    '<td><strong>' + plateNumber + '</strong><br><small>' + log.status + '</small></td>' +
+                    '<td class="text-right pr-4">' + timeAgo + '<br><small>' + memberName + '</small></td>' +
                     '</tr>';
                 logBody.append(row);
             });

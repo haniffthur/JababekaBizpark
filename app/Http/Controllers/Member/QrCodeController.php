@@ -99,7 +99,7 @@ public function index(Request $request): View|JsonResponse
         if ($truck->user_id !== Auth::id()) {
             abort(403, 'Anda tidak diizinkan membuat QR untuk truk ini.');
         }
-$uniqueCode = now()->format('dmY') . strtoupper(Str::random(8));
+$uniqueCode = now()->format('dmY') . strtoupper(Str::random(2));
 
         QrCode::create([
         'truck_id' => $request->truck_id,

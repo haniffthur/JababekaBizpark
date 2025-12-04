@@ -7,33 +7,58 @@ use App\Models\PersonalQr;
 use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
-use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Facades\Validator;
-use Illuminate\Validation\Rule; // <-- Import Rule
-use Illuminate\Support\Str; // <-- Import Str
+use Illuminate\Validation\Rule;
+use Illuminate\Support\Str;
 
 class PersonalQrController extends Controller
 {
     /**
-     * Menampilkan daftar semua QR Code Pribadi (Reusable).
-     * Merespons HTML atau JSON (untuk AJAX).
+     * HALAMAN UTAMA: Menampilkan Daftar Member & Jumlah QR mereka.
+     * Rute: GET /admin/personal-qrs
      */
-    public function index(Request $request): View|JsonResponse
+    public function index(Request $request): View
     {
-        $query = PersonalQr::with('user')->latest();
+        // Ambil user yang role-nya 'member'
+        // withCount('personalQrs') akan menghitung jumlah QR secara otomatis
+        // Fitur pencarian sederhana (opsional)
+        $query = User::where('role', 'member');
 
-        if ($request->ajax()) {
-            $qrCodes = $query->take(20)->get();
-            return response()->json(['data' => $qrCodes]);
+        if ($request->has('search')) {
+            $search = $request->search;
+            $query->where(function($q) use ($search) {
+                $q->where('name', 'like', "%{$search}%")
+                  ->orWhere('email', 'like', "%{$search}%");
+            });
         }
 
-        $personalQrs = $query->paginate(20);
-        return view('admin.personal_qrs.index', compact('personalQrs'));
+        $members = $query->withCount('personalQrs')
+                         ->latest()
+                         ->paginate(10);
+
+        return view('admin.personal_qrs.index', compact('members'));
     }
 
     /**
-     * Menampilkan form edit QR Pribadi (misal: ganti plat).
+     * HALAMAN DETAIL: Menampilkan list QR milik satu member tertentu.
+     * Rute: GET /admin/personal-qrs/member/{user}
+     */
+    public function showMemberQrs(User $user): View
+    {
+        // Pastikan yang dilihat adalah member
+        if ($user->role !== 'member') {
+            abort(404);
+        }
+
+        // Ambil semua QR milik user ini
+        $personalQrs = $user->personalQrs()->latest()->get();
+
+        return view('admin.personal_qrs.show_member', compact('user', 'personalQrs'));
+    }
+
+    /**
+     * HALAMAN EDIT: Form edit satu QR.
      * Rute: GET /admin/personal-qrs/{personalQr}/edit
      */
     public function edit(PersonalQr $personalQr): View
@@ -42,40 +67,56 @@ class PersonalQrController extends Controller
     }
 
     /**
-     * Mengupdate QR Pribadi.
+     * PROSES UPDATE: Menyimpan perubahan QR.
      * Rute: PUT /admin/personal-qrs/{personalQr}
      */
     public function update(Request $request, PersonalQr $personalQr): RedirectResponse
     {
+        // 1. Validasi
         $validator = Validator::make($request->all(), [
+            'name' => 'required|string|max:255', // Nama Slot (misal: Mobil Alphard)
             'license_plate' => [
-                'required',
-                'string',
+                'required', 
+                'string', 
                 'max:20',
-                // Pastikan unik, KECUALI untuk ID QR ini sendiri
-                Rule::unique('personal_qrs')->ignore($personalQr->id),
+                // Plat nomor harus unik di tabel personal_qrs, KECUALI punya dia sendiri
+                Rule::unique('personal_qrs')->ignore($personalQr->id)
             ],
-            'name' => 'required|string|max:255',
         ]);
 
         if ($validator->fails()) {
             return back()->withErrors($validator)->withInput();
         }
 
-        // Update data
-        $personalQr->license_plate = $request->license_plate;
+        // 2. Update Data Dasar
         $personalQr->name = $request->name;
+        $personalQr->license_plate = $request->license_plate;
 
-        // Cek jika Admin minta regenerasi kode QR
+        // 3. Cek Opsi Regenerasi Kode (Jika Admin mencentang checkbox)
         if ($request->has('regenerate_code')) {
-           $personalQr->code = now()->format('dmY')  . strtoupper(Str::random(8));
+            // Format: dd/mm/yyyy/8DIGITACAK (Contoh: 28/11/2025/A1B2C3D4)
+            $personalQr->code = now()->format('d/m/Y') . '/' . strtoupper(Str::random(2));
+            
+            // Reset status ke 'baru' (karena kode berubah, harus check-in ulang)
+            $personalQr->status = 'baru';
         }
 
         $personalQr->save();
 
-        return redirect()->route('admin.personal-qrs.index')
-                     ->with('success', 'QR Pribadi berhasil diperbarui.');
+        // 4. Redirect kembali ke halaman detail member tersebut
+        return redirect()->route('admin.personal-qrs.member', $personalQr->user_id)
+                         ->with('success', 'QR Pribadi berhasil diperbarui.');
     }
 
-    // (Method create, store, destroy bisa ditambahkan di sini nanti)
+    /**
+     * HAPUS QR (Opsional, jika diperlukan)
+     */
+    public function destroy(PersonalQr $personalQr): RedirectResponse
+    {
+        $userId = $personalQr->user_id;
+        $personalQr->delete();
+
+        return redirect()->route('admin.personal-qrs.member', $userId)
+                         ->with('success', 'QR Pribadi berhasil dihapus.');
+    }
 }

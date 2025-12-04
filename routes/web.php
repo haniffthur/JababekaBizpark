@@ -78,6 +78,7 @@ Route::middleware(['auth', 'role:admin'])->prefix('admin')->name('admin.')->grou
     Route::post('qr-approvals/{qrcode}/approve', [AdminQrController::class, 'approve'])->name('qr.approvals.approve');
 
     Route::resource('gate-machines', GateMachineController::class);
+    Route::get('personal-qrs/member/{user}', [AdminPersonalQrController::class, 'showMemberQrs'])->name('personal-qrs.member');
 });
 
 
