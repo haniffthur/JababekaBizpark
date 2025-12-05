@@ -69,8 +69,7 @@
             <a class="collapse-item {{ request()->routeIs('admin.gate-machines.*') ? 'active' : '' }}" 
                href="{{ route('admin.gate-machines.index') }}">Manajemen Mesin Gate</a>
 
-            <a class="collapse-item {{ request()->routeIs('admin.personal-qrs.*') ? 'active' : '' }}" 
-               href="{{ route('admin.personal-qrs.index') }}">Manajemen QR Pribadi</a>
+           
         </div>
     </div>
 </li>
