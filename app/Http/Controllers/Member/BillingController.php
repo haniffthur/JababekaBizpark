@@ -39,24 +39,26 @@ class BillingController extends Controller
         return view('member.billings.show', compact('billing'));
     }
     public function pay(Request $request, Billing $billing)
-{
-    // Validasi pemilik
-    if ($billing->user_id !== Auth::id()) abort(403);
+    {
+        if ($billing->user_id !== Auth::id()) abort(403);
+        
+        $request->validate([
+            'proof_image' => 'required|image|max:2048',
+        ]);
 
-    $request->validate([
-        'proof_image' => 'required|image|max:2048',
-    ]);
+        if ($request->hasFile('proof_image')) {
+            $path = $request->file('proof_image')->store('proofs', 'public');
+            $billing->proof_image = $path;
+        }
 
-    // Simpan file
-    if ($request->hasFile('proof_image')) {
-        $path = $request->file('proof_image')->store('proofs', 'public');
-        $billing->proof_image = $path;
+        // --- PERUBAHAN DISINI ---
+        // Ubah status jadi 'pending_verification' (Menunggu Admin)
+        $billing->status = 'pending_verification';
+        $billing->save();
+
+        // JANGAN ubah status User jadi 'paid' disini.
+        // User tetap 'unpaid' sampai Admin approve.
+
+        return back()->with('success', 'Bukti terkirim. Mohon tunggu verifikasi Admin untuk pembukaan akses.');
     }
-
-    // Update status (Langsung lunas atau pending verifikasi, tergantung maumu)
-    $billing->status = 'paid'; 
-    $billing->save();
-
-    return back()->with('success', 'Bukti pembayaran berhasil diupload.');
-}
 }

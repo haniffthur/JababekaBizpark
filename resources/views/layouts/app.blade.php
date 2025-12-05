@@ -5,7 +5,80 @@
     <title>Dashboard</title>
     <link href="{{ asset('vendor/fontawesome-free/css/all.min.css') }}" rel="stylesheet">
     <link href="{{ asset('css/sb-admin-2.min.css') }}" rel="stylesheet">
-    
+    @if(auth()->check() && auth()->user()->role == 'admin')
+
+    {{-- Pastikan SweetAlert diload --}}
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+
+    <script>
+        var globalLastCount = -1; // Variabel pelacak
+
+        function checkGlobalNotifications() {
+            $.ajax({
+                url: "{{ route('admin.api.check.pending') }}", // Panggil API Ringan
+                type: 'GET',
+                dataType: 'json',
+                success: function(response) {
+                    var currentCount = response.count;
+                    var badge = $('#sidebar-pending-badge'); // ID badge di sidebar
+
+                    // A. Update Angka Sidebar
+                    if (currentCount > 0) {
+                        badge.text(currentCount).show();
+                    } else {
+                        badge.hide();
+                    }
+
+                    // B. Trigger Alert & Suara (Jika Bertambah)
+                    if (globalLastCount !== -1 && currentCount > globalLastCount) {
+                        
+                        // Mainkan Suara
+                        try {
+                            var audio = document.getElementById('global-notif-sound');
+                            audio.currentTime = 0;
+                            audio.play().catch(e => console.log("Autoplay blocked"));
+                        } catch(e) {}
+
+                        // Tampilkan Alert
+                        Swal.fire({
+                            title: 'Permintaan Baru!',
+                            text: 'Ada ' + (currentCount - globalLastCount) + ' permintaan QR Code baru.',
+                            icon: 'info',
+                            toast: true,
+                            position: 'top-end',
+                            showConfirmButton: true,
+                            confirmButtonText: 'Lihat',
+                            showCancelButton: true,
+                            cancelButtonText: 'Tutup',
+                            timer: 10000,
+                            timerProgressBar: true,
+                        }).then((result) => {
+                            if (result.isConfirmed) {
+                                window.location.href = "{{ route('admin.qr.approvals.index') }}";
+                            }
+                        });
+                    }
+
+                    globalLastCount = currentCount;
+                },
+                error: function(err) {
+                    console.error("Gagal cek notifikasi:", err);
+                }
+            });
+        }
+
+        $(document).ready(function() {
+            // Cek pertama kali
+            checkGlobalNotifications();
+            
+            // Cek setiap 5 detik
+            setInterval(checkGlobalNotifications, 5000);
+        });
+    </script>
+@endif
+
+{{-- Stack Scripts (Untuk script spesifik halaman lain) --}}
+@stack('scripts')
     @stack('styles')
    <style>
 

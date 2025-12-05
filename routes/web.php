@@ -22,6 +22,7 @@ use App\Http\Controllers\Admin\GateManagementController;
 use App\Http\Controllers\Admin\SettingController;
 use App\Http\Controllers\Admin\AdminQrController; // <-- Controller Baru
 use App\Http\Controllers\Admin\GateMachineController;
+use App\Http\Controllers\ProfileController;
 
 // Member Controllers
 use App\Http\Controllers\Member\TruckController;
@@ -47,6 +48,8 @@ Route::middleware(['auth'])->group(function () {
     
     // Rute 'Dashboard' akan diarahkan berdasarkan role di controller
     Route::get('/', [DashboardController::class, 'index'])->name('dashboard');
+    Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
+    Route::put('/profile', [ProfileController::class, 'update'])->name('profile.update');
 });
 
 
@@ -60,6 +63,8 @@ Route::middleware(['auth', 'role:admin'])->prefix('admin')->name('admin.')->grou
 
     // Manajemen Keuangan (CRUD)
     Route::resource('billings', AdminBillingController::class);
+    Route::post('billings/{billing}/approve', [AdminBillingController::class, 'approve'])->name('billings.approve');
+Route::post('billings/{billing}/reject', [AdminBillingController::class, 'reject'])->name('billings.reject');
 
     // Laporan & Log
     Route::get('gate-logs', [GateManagementController::class, 'index'])->name('gate.logs');
@@ -73,6 +78,7 @@ Route::middleware(['auth', 'role:admin'])->prefix('admin')->name('admin.')->grou
     Route::get('data/stats', [DashboardController::class, 'getAdminData'])->name('data.stats');
     Route::get('dashboard/chart-data', [DashboardController::class, 'getChartData'])->name('chart.data');
   Route::get('chart/data', [DashboardController::class, 'getChartData'])->name('chart.filter');
+  Route::get('api/check-pending', [DashboardController::class, 'checkPendingQr'])->name('api.check.pending');
 
     // ** BARU: Persetujuan QR Code **
     Route::get('qr-approvals', [AdminQrController::class, 'index'])->name('qr.approvals.index');

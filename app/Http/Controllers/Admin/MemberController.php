@@ -39,6 +39,7 @@ class MemberController extends Controller
             'name' => 'required|string|max:255',
             'email' => 'required|string|email|max:255|unique:users',
             'password' => 'required|string|min:8|confirmed',
+            'ipl_status' => 'paid',
             'plate_1' => 'nullable|string|max:20|unique:personal_qrs,license_plate',
             'plate_2' => 'nullable|string|max:20|unique:personal_qrs,license_plate',
             'plate_3' => 'nullable|string|max:20|unique:personal_qrs,license_plate',

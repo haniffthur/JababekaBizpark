@@ -13,7 +13,7 @@ return new class extends Migration
 {
     Schema::table('users', function (Blueprint $table) {
         // Tambah kolom status IPL. Default-nya 'unpaid' (Belum Bayar)
-        $table->enum('ipl_status', ['paid', 'unpaid'])
+        $table->enum('ipl_status', ['paid', 'unpaid','pending'])
               ->default('unpaid')
               ->after('role');
     });

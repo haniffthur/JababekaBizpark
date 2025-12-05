@@ -118,4 +118,41 @@ class BillingController extends Controller
             return back()->with('error', 'Gagal menghapus tagihan. Error: ' . $e->getMessage());
         }
     }
+    public function approve(Billing $billing)
+    {
+        // 1. Update Tagihan jadi Lunas
+        $billing->status = 'paid';
+        $billing->save();
+
+        // 2. Cek apakah member ini masih punya hutang LAIN yang belum lunas?
+        $sisaHutang = Billing::where('user_id', $billing->user_id)
+                             ->where('status', '!=', 'paid')
+                             ->count();
+
+        // 3. Jika tidak ada hutang lain, BUKA AKSES GERBANG
+        if ($sisaHutang == 0) {
+            $user = $billing->user;
+            $user->ipl_status = 'paid'; // Akses Dibuka
+            $user->save();
+        }
+
+        return back()->with('success', 'Pembayaran disetujui. Akses member diperbarui.');
+    }
+
+    /**
+     * Tolak Pembayaran Member (Misal bukti palsu)
+     */
+    public function reject(Billing $billing)
+    {
+        $billing->status = 'unpaid'; // Kembalikan ke belum bayar
+        // $billing->proof_image = null; // Opsional: hapus gambar lama
+        $billing->save();
+
+        // Pastikan user tetap terblokir
+        $user = $billing->user;
+        $user->ipl_status = 'unpaid';
+        $user->save();
+
+        return back()->with('error', 'Pembayaran ditolak. Member harus upload ulang.');
+    }
 }

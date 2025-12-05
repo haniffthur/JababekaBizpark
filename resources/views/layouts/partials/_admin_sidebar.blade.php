@@ -35,14 +35,22 @@
         <div class="bg-white py-2 collapse-inner rounded">
             <h6 class="collapse-header">Laporan & Persetujuan:</h6>
             
-            {{-- MENU KEUANGAN DIHAPUS/DIKOMENTARI --}}
-            {{-- 
+          
             <a class="collapse-item {{ request()->routeIs('admin.billings.*') ? 'active' : '' }}" 
                href="{{ route('admin.billings.index') }}">Manajemen Keuangan</a>
-            --}}
+        
             
-            <a class="collapse-item {{ request()->routeIs('admin.qr.approvals.index') ? 'active' : '' }}" 
-               href="{{ route('admin.qr.approvals.index') }}">Persetujuan QR Code</a>
+          <a class="collapse-item {{ request()->routeIs('admin.qr.approvals.index') ? 'active' : '' }}" 
+   href="{{ route('admin.qr.approvals.index') }}">
+    <span>Persetujuan QR Code</span>
+    
+    {{-- ID dan Class ini PENTING untuk AJAX --}}
+    <span id="sidebar-pending-badge" class="badge badge-danger badge-counter ml-1" 
+          style="font-size: 0.7rem; display: {{ (isset($pendingQrCount) && $pendingQrCount > 0) ? 'inline-block' : 'none' }};">
+        {{ $pendingQrCount ?? 0 }}
+    </span>
+</a>
+               
             
             <a class="collapse-item {{ request()->routeIs('admin.gate.logs') ? 'active' : '' }}" 
                href="{{ route('admin.gate.logs') }}">Laporan / Log Sistem</a>

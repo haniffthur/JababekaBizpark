@@ -28,15 +28,11 @@ class AppServiceProvider extends ServiceProvider
             return "<?php echo QrCode::size(150)->generate($expression); ?>";
         });
         View::composer('layouts.partials._admin_sidebar', function ($view) {
-            
-            // Hitung QR yang: 1. Belum disetujui, 2. Statusnya masih 'baru'
-            $pendingCount = QrCode::where('is_approved', false)
-                                  ->where('status', 'baru')
-                                  ->count();
-            
-            // Kirim variabel $pendingQrCount ke sidebar
-            $view->with('pendingQrCount', $pendingCount);
-        });
+        $pendingCount = QrCode::where('is_approved', false)
+                              ->where('status', 'baru')
+                              ->count();
+        $view->with('pendingQrCount', $pendingCount);
+    });
         // ---------------------------------
     }
 }

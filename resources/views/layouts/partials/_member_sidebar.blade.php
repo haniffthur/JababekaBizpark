@@ -41,10 +41,10 @@
     <div id="collapseLaporanMember" class="collapse {{ $memberLaporanActive ? 'show' : '' }}" data-parent="#accordionSidebar">
         <div class="bg-white py-2 collapse-inner rounded">
             <h6 class="collapse-header">Laporan Saya:</h6>
-            <!-- <a class="collapse-item {{ request()->routeIs('member.billings.*') ? 'active' : '' }}" 
-               href="{{ route('member.billings.index') }}">Tagihan Saya</a> -->
-               <a class="collapse-item {{ request()->routeIs('member.ipl.index') ? 'active' : '' }}" 
-   href="{{ route('member.ipl.index') }}">Tagihan IPL Bulanan</a>
+            <a class="collapse-item {{ request()->routeIs('member.billings.*') ? 'active' : '' }}" 
+               href="{{ route('member.billings.index') }}">Tagihan Saya</a>
+               <!-- <a class="collapse-item {{ request()->routeIs('member.ipl.index') ? 'active' : '' }}" 
+   href="{{ route('member.ipl.index') }}">Tagihan IPL Bulanan</a> -->
             <a class="collapse-item {{ request()->routeIs('member.gate.logs') ? 'active' : '' }}" 
                href="{{ route('member.gate.logs') }}">Histori Truk</a>
         </div>
