@@ -72,6 +72,7 @@ Route::middleware(['auth', 'role:admin'])->prefix('admin')->name('admin.')->grou
     // Rute AJAX Dashboard
     Route::get('data/stats', [DashboardController::class, 'getAdminData'])->name('data.stats');
     Route::get('dashboard/chart-data', [DashboardController::class, 'getChartData'])->name('chart.data');
+  Route::get('chart/data', [DashboardController::class, 'getChartData'])->name('chart.filter');
 
     // ** BARU: Persetujuan QR Code **
     Route::get('qr-approvals', [AdminQrController::class, 'index'])->name('qr.approvals.index');
@@ -111,4 +112,7 @@ Route::middleware(['auth', 'role:member'])->prefix('member')->name('member.')->g
 
     Route::get('ipl-bills', [IplBillController::class, 'index'])->name('ipl.index');
 Route::post('ipl-bills/{iplBill}/pay', [IplBillController::class, 'pay'])->name('ipl.pay');
+// Di dalam grup 'member'
+Route::post('billings/{billing}/pay', [MemberBillingController::class, 'pay'])->name('billings.pay');
+
 });

@@ -24,6 +24,7 @@
         body {
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
             /* GANTI: Gradien Biru -> Gradien Hijau (dari logo) */
+            background-image: 'img/bgbizpark.jpg';
             background: linear-gradient(135deg, #005a41 0%, #007a5a 100%);
             min-height: 100vh;
             display: flex;

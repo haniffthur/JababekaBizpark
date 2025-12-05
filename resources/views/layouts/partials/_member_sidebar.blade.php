@@ -22,7 +22,7 @@
             <a class="collapse-item {{ request()->routeIs('member.trucks.*') ? 'active' : '' }}" 
                href="{{ route('member.trucks.index') }}">Manajemen Truk</a>
             <a class="collapse-item {{ request()->routeIs('member.qrcodes.*') ? 'active' : '' }}" 
-               href="{{ route('member.qrcodes.index') }}">Manajemen QR Truk</a>
+               href="{{ route('member.qrcodes.index') }}">Cetak QR Truk</a>
             <a class="collapse-item {{ request()->routeIs('member.personal_qrs.*') ? 'active' : '' }}" 
                href="{{ route('member.personal_qrs.index') }}">QR Pribadi Saya</a>
         </div>

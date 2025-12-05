@@ -38,4 +38,25 @@ class BillingController extends Controller
 
         return view('member.billings.show', compact('billing'));
     }
+    public function pay(Request $request, Billing $billing)
+{
+    // Validasi pemilik
+    if ($billing->user_id !== Auth::id()) abort(403);
+
+    $request->validate([
+        'proof_image' => 'required|image|max:2048',
+    ]);
+
+    // Simpan file
+    if ($request->hasFile('proof_image')) {
+        $path = $request->file('proof_image')->store('proofs', 'public');
+        $billing->proof_image = $path;
+    }
+
+    // Update status (Langsung lunas atau pending verifikasi, tergantung maumu)
+    $billing->status = 'paid'; 
+    $billing->save();
+
+    return back()->with('success', 'Bukti pembayaran berhasil diupload.');
+}
 }

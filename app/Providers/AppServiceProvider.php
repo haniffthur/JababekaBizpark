@@ -4,7 +4,8 @@ namespace App\Providers;
 
 use Illuminate\Support\ServiceProvider;
 use Illuminate\Support\Facades\Blade;
-
+use Illuminate\Support\Facades\View; // <-- 1. TAMBAHKAN IMPORT INI
+use App\Models\QrCode;
 class AppServiceProvider extends ServiceProvider
 {
     /**
@@ -25,6 +26,16 @@ class AppServiceProvider extends ServiceProvider
             // Pastikan kamu sudah menginstal ini: composer require simplesoftwareio/simple-qrcode
             // Jika belum, instal dulu.
             return "<?php echo QrCode::size(150)->generate($expression); ?>";
+        });
+        View::composer('layouts.partials._admin_sidebar', function ($view) {
+            
+            // Hitung QR yang: 1. Belum disetujui, 2. Statusnya masih 'baru'
+            $pendingCount = QrCode::where('is_approved', false)
+                                  ->where('status', 'baru')
+                                  ->count();
+            
+            // Kirim variabel $pendingQrCount ke sidebar
+            $view->with('pendingQrCount', $pendingCount);
         });
         // ---------------------------------
     }

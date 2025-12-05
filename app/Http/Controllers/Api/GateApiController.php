@@ -184,31 +184,61 @@ class GateApiController extends Controller
         return $this->formatResponse(1, 'Akses OK', $request);
     }
 
-    private function handleQrTrukCheckOut(Request $request, QrCode $qrCode, string $licensePlate): JsonResponse
+   private function handleQrTrukCheckOut(Request $request, QrCode $qrCode, string $licensePlate, $ioMode): JsonResponse
     {
         if ($qrCode->status !== 'aktif' || $qrCode->truck->license_plate !== $licensePlate) {
-            return $this->formatResponse(0, 'Akses tdk ok', $request);
+            return $this->formatResponse(0, 'Plat tidak cocok atau QR tidak aktif.', $request, $ioMode);
         }
 
-        // Hitung Billing
-        $lastLog = GateLog::where('truck_id', $qrCode->truck_id)->where('status', 'Berhasil Masuk (Truk)')->latest('check_in_at')->first();
+        $lastCheckInLog = GateLog::where('truck_id', $qrCode->truck_id)->where('status', 'Berhasil Masuk (Truk)')->latest('check_in_at')->first();
+        if (!$lastCheckInLog) return $this->formatResponse(0, 'Log masuk tidak ditemukan.', $request, $ioMode);
+
+        $checkInTime = Carbon::parse($lastCheckInLog->check_in_at);
+        $checkOutTime = now();
+        $billingAmount = 0;
         $billingNotes = 'Check-out normal.';
         
-        if ($lastLog) {
-            $checkIn = Carbon::parse($lastCheckInLog->check_in_at ?? now());
-            if (!$checkIn->isSameDay(now())) {
-                 $billingNotes = 'Ada tagihan menginap.';
-                 // ... (Logika billing simpan di sini seperti sebelumnya) ...
-                 // (Disederhanakan untuk format ini, tapi fungsionalitas tetap sama)
+        // Cek Menginap
+        if (!$checkInTime->isSameDay($checkOutTime)) {
+            $nights = $checkInTime->diffInNights($checkOutTime);
+            if ($nights == 0) $nights = 1;
+            
+            $overnightRate = (float) Setting::getValue('overnight_rate', 0);
+            $billingAmount = $nights * $overnightRate;
+            $billingNotes = "Menginap {$nights} malam @ Rp " . number_format($overnightRate, 0, ',', '.');
+            
+            // --- KEMBALI KE LOGIKA BILLING LANGSUNG ---
+            $billingMode = Setting::getValue('billing_integration_mode', 'local');
+            
+            if ($billingMode == 'ipl') {
+                 try {
+                    (new IplBillingService())->sendBilling($qrCode->truck->user->id, $billingAmount, $billingNotes);
+                 } catch (\Exception $e) { Log::error($e->getMessage()); }
+            } else {
+                // DIRECT BILLING (Langsung buat tagihan)
+                Billing::create([
+                    'user_id' => $qrCode->truck->user_id,
+                    'total_amount' => $billingAmount,
+                    'status' => 'pending',
+                    'due_date' => now()->addDays(14),
+                    // 'description' => $billingNotes // Jika ada kolom description
+                ]);
             }
         }
 
         $qrCode->status = 'selesai'; $qrCode->save();
         $qrCode->truck->is_inside = false; $qrCode->truck->save();
         
-        GateLog::create(['truck_id' => $qrCode->truck_id, 'check_out_at' => now(), 'status' => 'Berhasil Keluar (Truk)', 'notes' => $billingNotes]);
+        GateLog::create([
+            'truck_id' => $qrCode->truck_id, 
+            'check_in_at' => $checkInTime,
+            'check_out_at' => now(), 
+            'status' => 'Berhasil Keluar (Truk)', 
+            'notes' => $billingNotes, 
+            'billing_amount' => $billingAmount
+        ]);
 
-        return $this->formatResponse(1, 'Sampaijumpa', $request);
+        return $this->formatResponse(1, 'Sampai Jumpa (Truk)', $request, $ioMode);
     }
 
     private function handleQrPribadiCheckOut(Request $request, PersonalQr $qrCode, string $licensePlate): JsonResponse

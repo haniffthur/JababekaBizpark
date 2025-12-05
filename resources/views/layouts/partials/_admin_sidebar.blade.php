@@ -23,7 +23,8 @@
 </li>
 
 @php 
-    $adminOpsActive = request()->routeIs('admin.billings.*') || request()->routeIs('admin.gate.logs') || request()->routeIs('admin.qr.approvals.index'); 
+    // Hapus 'admin.billings.*' dari pengecekan aktif
+    $adminOpsActive = request()->routeIs('admin.gate.logs') || request()->routeIs('admin.qr.approvals.index'); 
 @endphp
 <li class="nav-item {{ $adminOpsActive ? 'active' : '' }}">
     <a class="nav-link {{ $adminOpsActive ? '' : 'collapsed' }}" href="#" data-toggle="collapse" data-target="#collapseOperasional">
@@ -32,9 +33,13 @@
     </a>
     <div id="collapseOperasional" class="collapse {{ $adminOpsActive ? 'show' : '' }}" data-parent="#accordionSidebar">
         <div class="bg-white py-2 collapse-inner rounded">
-            <h6 class="collapse-header">Keuangan & Laporan:</h6>
+            <h6 class="collapse-header">Laporan & Persetujuan:</h6>
+            
+            {{-- MENU KEUANGAN DIHAPUS/DIKOMENTARI --}}
+            {{-- 
             <a class="collapse-item {{ request()->routeIs('admin.billings.*') ? 'active' : '' }}" 
                href="{{ route('admin.billings.index') }}">Manajemen Keuangan</a>
+            --}}
             
             <a class="collapse-item {{ request()->routeIs('admin.qr.approvals.index') ? 'active' : '' }}" 
                href="{{ route('admin.qr.approvals.index') }}">Persetujuan QR Code</a>
@@ -46,7 +51,9 @@
 </li>
 
 @php 
-    $adminSettingsActive = request()->routeIs('admin.settings.*') || request()->routeIs('admin.personal-qrs.*'); 
+    $adminSettingsActive = request()->routeIs('admin.settings.*') || 
+                           request()->routeIs('admin.personal-qrs.*') || 
+                           request()->routeIs('admin.gate-machines.*'); 
 @endphp
 <li class="nav-item {{ $adminSettingsActive ? 'active' : '' }}">
     <a class="nav-link {{ $adminSettingsActive ? '' : 'collapsed' }}" href="#" data-toggle="collapse" data-target="#collapseSistem">
@@ -58,8 +65,10 @@
             <h6 class="collapse-header">Sistem & Aset:</h6>
             <a class="collapse-item {{ request()->routeIs('admin.settings.*') ? 'active' : '' }}" 
                href="{{ route('admin.settings.index') }}">Pengaturan Sistem</a>
-               <a class="collapse-item {{ request()->routeIs('admin.gate-machines.*') ? 'active' : '' }}" 
+            
+            <a class="collapse-item {{ request()->routeIs('admin.gate-machines.*') ? 'active' : '' }}" 
                href="{{ route('admin.gate-machines.index') }}">Manajemen Mesin Gate</a>
+
             <a class="collapse-item {{ request()->routeIs('admin.personal-qrs.*') ? 'active' : '' }}" 
                href="{{ route('admin.personal-qrs.index') }}">Manajemen QR Pribadi</a>
         </div>

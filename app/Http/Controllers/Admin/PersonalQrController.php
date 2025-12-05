@@ -95,7 +95,7 @@ class PersonalQrController extends Controller
         // 3. Cek Opsi Regenerasi Kode (Jika Admin mencentang checkbox)
         if ($request->has('regenerate_code')) {
             // Format: dd/mm/yyyy/8DIGITACAK (Contoh: 28/11/2025/A1B2C3D4)
-            $personalQr->code = now()->format('d/m/Y') . '/' . strtoupper(Str::random(2));
+            $personalQr->code = now()->format('dmY') . '' . strtoupper(Str::random(2));
             
             // Reset status ke 'baru' (karena kode berubah, harus check-in ulang)
             $personalQr->status = 'baru';
