@@ -240,9 +240,9 @@ class DashboardController extends Controller
             'checkOuts' => $dataCheckOut
         ]);
     }
-    public function checkPendingQr(): JsonResponse
+   public function checkPendingQr(): JsonResponse
     {
-        $count = \App\Models\QrCode::where('is_approved', false)
+        $count = QrCode::where('is_approved', false)
                                     ->where('status', 'baru')
                                     ->count();
         

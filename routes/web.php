@@ -78,7 +78,7 @@ Route::post('billings/{billing}/reject', [AdminBillingController::class, 'reject
     Route::get('data/stats', [DashboardController::class, 'getAdminData'])->name('data.stats');
     Route::get('dashboard/chart-data', [DashboardController::class, 'getChartData'])->name('chart.data');
   Route::get('chart/data', [DashboardController::class, 'getChartData'])->name('chart.filter');
-  Route::get('api/check-pending', [DashboardController::class, 'checkPendingQr'])->name('api.check.pending');
+  Route::get('api/check-pending', [App\Http\Controllers\DashboardController::class, 'checkPendingQr'])->name('api.check.pending');
 
     // ** BARU: Persetujuan QR Code **
     Route::get('qr-approvals', [AdminQrController::class, 'index'])->name('qr.approvals.index');

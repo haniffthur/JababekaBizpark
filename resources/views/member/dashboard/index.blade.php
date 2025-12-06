@@ -273,7 +273,7 @@ function updateMemberDashboard() {
 }
 
 $(document).ready(function() {
-    setInterval(updateMemberDashboard, 5000); 
+    setInterval(updateMemberDashboard, 1000); 
 });
 </script>
 @endpush

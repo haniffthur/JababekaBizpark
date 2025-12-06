@@ -1,57 +1,193 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="utf-8">
-    <title>Dashboard</title>
-    <link href="{{ asset('vendor/fontawesome-free/css/all.min.css') }}" rel="stylesheet">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+    <meta name="description" content="">
+    <meta name="author" content="">
+
+    <title>GudangJababeka - Sistem Gate</title>
+
+    <link href="{{ asset('vendor/fontawesome-free/css/all.min.css') }}" rel="stylesheet" type="text/css">
+    <link href="https://fonts.googleapis.com/css?family=Nunito:200,200i,300,300i,400,400i,600,600i,700,700i,800,800i,900,900i" rel="stylesheet">
+
     <link href="{{ asset('css/sb-admin-2.min.css') }}" rel="stylesheet">
-    @if(auth()->check() && auth()->user()->role == 'admin')
 
-    {{-- Pastikan SweetAlert diload --}}
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.min.css">
+
+    @stack('styles')
+    
+    <style>
+        /* ==================================== */
+        /* STYLE KHUSUS SWEETALERT2 (MODERN & CLEAN) */
+        /* ==================================== */
+        
+        /* Mengatur tampilan umum popup: border radius, font, dan bayangan */
+        div:where(.swal2-container) div:where(.swal2-popup) {
+            border-radius: 12px !important; /* Sedikit lebih kecil dari 15px */
+            font-family: 'Nunito', sans-serif !important;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1) !important; /* Bayangan halus */
+        }
+
+        /* Mengatur warna dan padding judul */
+        div:where(.swal2-container) h2:where(.swal2-title) {
+            font-size: 1.5rem !important;
+            font-weight: 700 !important;
+            color: #3a3b45 !important; /* Warna teks yang lebih gelap/profesional */
+            padding-top: 20px !important; /* Tambah padding atas */
+        }
+
+        /* Mengatur teks konten */
+        div:where(.swal2-container) div:where(.swal2-html-container) {
+            font-size: 1rem !important;
+            color: #6c757d !important; /* Warna abu-abu yang lebih lembut */
+        }
+
+        /* Mengatur tombol konfirmasi */
+        div:where(.swal2-container) button:where(.swal2-confirm) {
+            background-color: #4e73df !important; /* Warna primary SB Admin 2 */
+            color: white !important;
+            border-radius: 8px !important;
+            font-weight: 600 !important;
+            transition: background-color 0.2s ease;
+        }
+
+        /* Mengatur tombol batal/cancel */
+        div:where(.swal2-container) button:where(.swal2-cancel) {
+            border-radius: 8px !important;
+            background-color: #e4e4e4 !important; /* Warna abu-abu muda */
+            color: #3a3b45 !important; /* Warna teks yang kontras */
+            font-weight: 600 !important;
+        }
+
+        /* Mengatur ikon: agar lebih bulat dan menonjol */
+        div:where(.swal2-container) .swal2-icon {
+            margin-top: 15px !important;
+        }
+    </style>
+</head>
+
+<body id="page-top">
+
+    <div id="wrapper">
+
+        @include('layouts.sidebar')
+
+        <div id="content-wrapper" class="d-flex flex-column bg-white">
+            <div id="content">
+                @include('layouts.topbar')
+
+                <div class="container-fluid">
+                    @yield('content')
+                </div>
+            </div>
+            
+            @include('layouts.footer')
+        </div>
+    </div>
+
+    <a class="scroll-to-top rounded" href="#page-top">
+        <i class="fas fa-angle-up"></i>
+    </a>
+
+    <script src="{{ asset('vendor/jquery/jquery.min.js') }}"></script>
+    <script src="{{ asset('vendor/bootstrap/js/bootstrap.bundle.min.js') }}"></script>
+    <script src="{{ asset('vendor/jquery-easing/jquery.easing.min.js') }}"></script>
+    <script src="{{ asset('js/sb-admin-2.min.js') }}"></script>
+    
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
-
     <script>
-        var globalLastCount = -1; // Variabel pelacak
+        @if(session('success'))
+            Swal.fire({
+                icon: 'success',
+                title: 'Berhasil!',
+                text: "{{ session('success') }}",
+                showConfirmButton: false,
+                timer: 3000, // Hilang otomatis dalam 3 detik
+                timerProgressBar: true,
+                customClass: { popup: 'card-clean' }
+            });
+        @endif
+
+        @if(session('error'))
+            Swal.fire({
+                icon: 'error',
+                title: 'Gagal!',
+                text: "{{ session('error') }}",
+                confirmButtonText: 'Mengerti',
+                confirmButtonColor: '#e74a3b', // Warna merah
+                customClass: { popup: 'card-clean' }
+            });
+        @endif
+        
+        @if($errors->any())
+            // Menangkap error validasi form (misal: input kurang)
+            Swal.fire({
+                icon: 'warning',
+                title: 'Perhatian',
+                html: '<ul style="text-align: left;">@foreach($errors->all() as $error)<li>{{ $error }}</li>@endforeach</ul>',
+                confirmButtonText: 'Perbaiki',
+                confirmButtonColor: '#f6c23e', // Warna kuning
+                customClass: { popup: 'card-clean' }
+            });
+        @endif
+    </script>
+
+    {{-- Stack Scripts --}}
+    @stack('scripts')
+
+    {{-- ========================================== --}}
+    {{-- LOGIKA NOTIFIKASI GLOBAL (KHUSUS ADMIN) --}}
+    {{-- ========================================== --}}
+    @if(auth()->check() && auth()->user()->role == 'admin')
+    <script>
+        var globalLastCount = -1; // Penanda awal
 
         function checkGlobalNotifications() {
+            // Debug: Cek apakah fungsi jalan
+            // console.log("Mengecek notifikasi..."); 
+
             $.ajax({
-                url: "{{ route('admin.api.check.pending') }}", // Panggil API Ringan
+                // Pastikan nama route ini sesuai dengan routes/web.php
+                url: "{{ route('admin.api.check.pending') }}", 
                 type: 'GET',
                 dataType: 'json',
                 success: function(response) {
                     var currentCount = response.count;
-                    var badge = $('#sidebar-pending-badge'); // ID badge di sidebar
+                    var badge = $('#sidebar-pending-badge');
 
-                    // A. Update Angka Sidebar
+                    // A. Update Badge Sidebar
                     if (currentCount > 0) {
                         badge.text(currentCount).show();
                     } else {
                         badge.hide();
                     }
 
-                    // B. Trigger Alert & Suara (Jika Bertambah)
+                    // Debug: Lihat angka di console
+                    // console.log("Pending: " + currentCount + ", Last: " + globalLastCount);
+
+                    // B. Tampilkan Alert JIKA JUMLAH BERTAMBAH
+                    // Syarat: 
+                    // 1. Bukan load pertama (globalLastCount != -1)
+                    // 2. Jumlah sekarang LEBIH BESAR dari sebelumnya
                     if (globalLastCount !== -1 && currentCount > globalLastCount) {
                         
-                        // Mainkan Suara
-                        try {
-                            var audio = document.getElementById('global-notif-sound');
-                            audio.currentTime = 0;
-                            audio.play().catch(e => console.log("Autoplay blocked"));
-                        } catch(e) {}
-
-                        // Tampilkan Alert
+                        var selisih = currentCount - globalLastCount;
+                        
                         Swal.fire({
                             title: 'Permintaan Baru!',
-                            text: 'Ada ' + (currentCount - globalLastCount) + ' permintaan QR Code baru.',
+                            text: 'Ada ' + selisih + ' permintaan QR Code baru masuk.',
                             icon: 'info',
-                            toast: true,
                             position: 'top-end',
+                            toast: true,
                             showConfirmButton: true,
                             confirmButtonText: 'Lihat',
                             showCancelButton: true,
                             cancelButtonText: 'Tutup',
                             timer: 10000,
-                            timerProgressBar: true,
+                            timerProgressBar: true
                         }).then((result) => {
                             if (result.isConfirmed) {
                                 window.location.href = "{{ route('admin.qr.approvals.index') }}";
@@ -59,138 +195,24 @@
                         });
                     }
 
+                    // Simpan jumlah untuk pengecekan selanjutnya
                     globalLastCount = currentCount;
                 },
-                error: function(err) {
-                    console.error("Gagal cek notifikasi:", err);
+                error: function(xhr) {
+                    console.error("Error Notifikasi:", xhr.responseText);
                 }
             });
         }
 
         $(document).ready(function() {
-            // Cek pertama kali
-            checkGlobalNotifications();
-            
-            // Cek setiap 5 detik
-            setInterval(checkGlobalNotifications, 5000);
+            checkGlobalNotifications(); // Cek pas load
+            setInterval(checkGlobalNotifications, 5000); // Cek tiap 5 detik
         });
     </script>
-@endif
-
-{{-- Stack Scripts (Untuk script spesifik halaman lain) --}}
-@stack('scripts')
-    @stack('styles')
-   <style>
-
-
- .sidebar-brand-text {
-        font-size: 1rem;
-        font-weight: bold;
-        /* Hapus atau override text-dark jika ada konflik */
-        /*color: #007bff; /* <-- UBAH ATAU TAMBAHKAN BARIS INI UNTUK WARNA BIRU */
-        /* Anda bisa menggunakan warna lain seperti: */
-        /* color: #1e3a8a;  (biru tua) */
-         color: #4e73df;  (biru primary dari sb-admin-2) */
-        /* color: blue;    (nama warna dasar) */
-        white-space: nowrap;
-    }
-    /* Styling untuk elemen <img> logo */
-    .sidebar-brand-logo {
-        height: 35px;       /* Tinggi spesifik untuk logo. Sesuaikan jika logo Anda terlalu kecil/besar. */
-        width: auto;        /* Biarkan lebar menyesuaikan secara proporsional agar gambar tidak pecah */
-        max-height: 40px;   /* Batas tinggi maksimum */
-        object-fit: contain; /* Penting! Memastikan seluruh gambar logo terlihat tanpa terpotong atau terdistorsi */
-        margin-right: 2px; /* Memberi jarak antara logo dan teks "BinaTaruna" */
-        vertical-align: middle; /* Membantu penempatan vertikal agar sejajar dengan teks */
-    }
-
-    /* Styling untuk teks "BinaTaruna" */
-  
-
-    /* Penyesuaian untuk kontainer ikon (div.sidebar-brand-icon) */
-    /* Ini biasanya sudah ditangani oleh Bootstrap classes seperti d-flex, align-items-center */
-    .sidebar-brand-icon {
-        display: flex; /* Memastikan flexbox aktif untuk alignment */
-        align-items: center; /* Memusatkan logo secara vertikal */
-        justify-content: center; /* Memusatkan logo secara horizontal jika hanya ada logo di dalamnya */
-        height: 100%; /* Memastikan kontainer mengambil tinggi penuh yang tersedia */
-    }
-
-    /* Penyesuaian opsional untuk kontainer keseluruhan sidebar-brand (elemen <a>) */
-    /* Anda bisa mengubah padding atau tinggi jika ingin membuat area logo lebih ramping atau lebih luas */
-    .sidebar-brand.py-4 {
-        padding-top: 1rem !important;    /* Contoh: kurangi padding atas */
-        padding-bottom: 1rem !important; /* Contoh: kurangi padding bawah */
-        /* height: 55px; */ /* Atau atur tinggi tetap jika diinginkan */
-    }
-/* Shadow kanan */
-.sidebar {
-    box-shadow: 5px 0 15px rgba(0, 0, 0, 0.1);
-    z-index: 1030;
-}
-
-/* Collapse container */
-.sidebar .collapse-inner {
-    border: 1px solid rgba(0, 0, 0, 0.1);
-    border-radius: 0.5rem;
-    background-color: #ffffff;
-    padding: 0;
-    overflow: hidden;
-}
-
-/* Item collapse */
-.sidebar .collapse-item {
-    display: block;
-    width: 100%;
-    padding: 0.65rem 1rem;
-    color: #4e73df;
-    font-size: 0.925rem;
-    border-bottom: 1px solid rgba(0, 0, 0, 0.05);
-    transition: background-color 0.2s ease, color 0.2s ease;
-}
-
-/* Hover & Active Style */
-.sidebar .collapse-item:hover {
-    background-color: #f1f3f9;
-    color: #2e59d9;
-    text-decoration: none;
-}
-
-.sidebar .collapse-item.active {
-    background-color: #e8edfb;
-    font-weight: 600;
-    color: #224abe;
-}
-</style>
-<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.min.css">
-<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
-</head>
-
-<body id="page-top">
+    @endif
     
 
-    <div id="wrapper">
-        @include('layouts.sidebar')
-
-        <div id="content-wrapper" class="d-flex flex-column bg-white">
-            <div id="content">
-                @include('layouts.topbar')
-                
-
-                <div class="container-fluid">
-                    @yield('content')
-                </div>
-            </div>
-
-            @include('layouts.footer')
-        </div>
-    </div>
-
-    <script src="{{ asset('vendor/jquery/jquery.min.js') }}"></script>
-    <script src="{{ asset('vendor/bootstrap/js/bootstrap.bundle.min.js') }}"></script>
-    <script src="{{ asset('vendor/jquery-easing/jquery.easing.min.js') }}"></script>
-    <script src="{{ asset('js/sb-admin-2.min.js') }}"></script>
-        <!-- Scripts dari halaman spesifik akan dimuat di sini -->
     @stack('scripts')
+
 </body>
 </html>

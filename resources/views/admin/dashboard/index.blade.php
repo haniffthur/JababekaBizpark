@@ -224,33 +224,6 @@
                     // ===========================================
                     // == LOGIKA NOTIFIKASI (ALERT) ==
                     // ===========================================
-                    var currentPending = response.stats.pending_qr_count;
-                    
-                    // Debug di Console agar kamu bisa lihat angkanya
-                    console.log("Pending QR: " + currentPending + " (Lama: " + lastPendingCount + ")");
-
-                    // Update Badge Sidebar
-                    var badge = $('#sidebar-pending-badge');
-                    if (currentPending > 0) { badge.text(currentPending).show(); } else { badge.hide(); }
-
-                    // Tampilkan SweetAlert JIKA bertambah
-                    if (lastPendingCount !== -1 && currentPending > lastPendingCount) {
-                        Swal.fire({
-                            title: 'Permintaan QR Baru!',
-                            text: 'Ada ' + (currentPending - lastPendingCount) + ' permintaan menunggu persetujuan.',
-                            icon: 'info',
-                            toast: true,
-                            position: 'top-end',
-                            showConfirmButton: true,
-                            confirmButtonText: 'Lihat',
-                            timer: 5000
-                        }).then((result) => {
-                            if (result.isConfirmed) {
-                                window.location.href = "{{ route('admin.qr.approvals.index') }}";
-                            }
-                        });
-                    }
-                    lastPendingCount = currentPending;
                 }
 
                 // 2. Update Tabel Log

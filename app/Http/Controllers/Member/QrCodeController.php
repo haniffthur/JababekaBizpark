@@ -85,8 +85,18 @@ public function index(Request $request): View|JsonResponse
      * Menyimpan QR Code baru ke database.
      * Rute: POST member/qrcodes
      */
-    public function store(Request $request): RedirectResponse
+  public function store(Request $request): RedirectResponse
     {
+        // ============================================================
+        // == 1. VALIDASI BARU: CEK STATUS BAYAR IPL MEMBER ==
+        // ============================================================
+        // Jika member belum bayar, tolak permintaan QR
+        if (Auth::user()->ipl_status !== 'paid') {
+            return back()->with('error', 'Gagal! Anda memiliki tagihan IPL yang belum lunas. Harap lunasi tagihan Anda di menu "Tagihan Saya" sebelum membuat QR Code baru.');
+        }
+        // ============================================================
+
+        // 2. Validasi Input Dasar
         $validator = Validator::make($request->all(), [
             'truck_id' => 'required|exists:trucks,id',
         ]);
@@ -95,21 +105,36 @@ public function index(Request $request): View|JsonResponse
             return back()->withErrors($validator)->withInput();
         }
 
+        // 3. Validasi Kepemilikan Truk
         $truck = Truck::find($request->truck_id);
         if ($truck->user_id !== Auth::id()) {
             abort(403, 'Anda tidak diizinkan membuat QR untuk truk ini.');
         }
-$uniqueCode = now()->format('dmY') . strtoupper(Str::random(2));
+
+        // 4. Validasi Truk Sedang Dalam Proses (QR Aktif)
+        $existingActiveQr = QrCode::where('truck_id', $truck->id)
+                                  ->whereIn('status', ['baru', 'aktif'])
+                                  ->first();
+
+        if ($existingActiveQr) {
+            $statusPesan = $existingActiveQr->status == 'baru' ? 'menunggu digunakan' : 'sedang berada di dalam gudang';
+            return back()->with('error', "Gagal! Truk dengan plat {$truck->license_plate} masih memiliki QR Code yang {$statusPesan}.");
+        }
+
+        // 5. Generate Kode Unik & Simpan
+        $uniqueCode = now()->format('dmY') . '' . strtoupper(Str::random(2));
 
         QrCode::create([
-        'truck_id' => $request->truck_id,
-        'code' => $uniqueCode,
-        'status' => 'baru', 
-        'is_approved' => false, // <-- KUNCI: Diset false secara default
-    ]);
+            'truck_id' => $request->truck_id,
+            'code' => $uniqueCode,
+            'status' => 'baru', 
+            'is_approved' => false, // Tetap butuh persetujuan admin
+        ]);
 
-    return redirect()->route('member.qrcodes.index')
-        ->with('success', 'Permintaan QR Code berhasil dibuat. Menunggu konfirmasi Admin.');
+        // (Opsional) Trigger Notifikasi ke Admin di sini
+
+        return redirect()->route('member.qrcodes.index')
+                         ->with('success', 'Permintaan QR Code berhasil dibuat. Menunggu konfirmasi Admin.');
     }
 
     /**

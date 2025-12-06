@@ -1,5 +1,17 @@
 {{-- resources/views/layouts/sidebar.blade.php --}}
 
+{{-- CSS KHUSUS UNTUK EFEK BLUR/SHADOW DI KANAN --}}
+<style>
+    .sidebar {
+        /* Efek bayangan halus di sebelah kanan */
+        box-shadow: 5px 0 20px rgba(0, 0, 0, 0.08) !important; 
+        
+        /* Pastikan sidebar berada di lapisan atas agar bayangan terlihat menimpa konten */
+        z-index: 10; 
+        position: relative;
+    }
+</style>
+
 <ul class="navbar-nav bg-white sidebar sidebar-light accordion" id="accordionSidebar">
 
     <a class="sidebar-brand d-flex align-items-center justify-content-center py-4" href="{{ route('dashboard') }}">
