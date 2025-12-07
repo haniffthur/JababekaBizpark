@@ -16,6 +16,7 @@ use App\Http\Controllers\Admin\AdminQrController;
 use App\Http\Controllers\Admin\GateMachineController;
 use App\Http\Controllers\Admin\PersonalQrController as AdminPersonalQrController;
 
+
 // Member Controllers
 use App\Http\Controllers\Member\TruckController;
 use App\Http\Controllers\Member\QrCodeController;
@@ -23,6 +24,8 @@ use App\Http\Controllers\Member\BillingController as MemberBillingController;
 use App\Http\Controllers\Member\GateLogController as MemberGateLogController;
 use App\Http\Controllers\Member\PersonalQrController as MemberPersonalQrController;
 use App\Http\Controllers\Member\IplBillController;
+
+
 
 /*
 |--------------------------------------------------------------------------

@@ -16,12 +16,15 @@ class BillingController extends Controller
      * Menampilkan daftar semua tagihan dari semua member.
      * Rute: GET admin/billings
      */
-    public function index(): View
+    public function index(Request $request)
     {
-        // Ambil semua tagihan, 'with('user')' untuk eager loading
-        // agar kita bisa tampilkan nama member tanpa N+1 query
-        $billings = Billing::with('user')->latest()->paginate(15);
+        $billings = \App\Models\Billing::with('user')->latest()->paginate(10);
         
+        // JIKA REQUEST AJAX (Polling), KIRIM HTML PARTIAL SAJA
+        if ($request->ajax()) {
+            return view('admin.billings.partials.table_body', compact('billings'))->render();
+        }
+
         return view('admin.billings.index', compact('billings'));
     }
 

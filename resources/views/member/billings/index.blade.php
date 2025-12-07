@@ -37,54 +37,9 @@
                         <th>Aksi</th>
                     </tr>
                 </thead>
-                <tbody>
-                    @forelse ($billings as $billing)
-                        <tr>
-                            <td>#{{ $billing->id }}</td>
-                            <td>Rp {{ number_format($billing->total_amount, 0, ',', '.') }}</td>
-                            <td>
-                                @if ($billing->status == 'paid')
-                                    <span class="badge badge-success">Lunas (Paid)</span>
-                                @elseif ($billing->status == 'pending_verification')
-                                    <span class="badge badge-info">Menunggu Verifikasi</span>
-                                @else
-                                    <span class="badge badge-warning">Belum Bayar</span>
-                                @endif
-                            </td>
-                            <td>
-                                {{-- Tampilkan Link Bukti jika sudah upload --}}
-                                @if ($billing->proof_image)
-                                    <a href="{{ asset('storage/' . $billing->proof_image) }}" target="_blank" class="btn btn-sm btn-info">
-                                        <i class="fas fa-image"></i> Lihat
-                                    </a>
-                                @else
-                                    <span class="text-muted small">-</span>
-                                @endif
-                            </td>
-                            <td>{{ $billing->due_date ? $billing->due_date->format('d/m/Y') : '-' }}</td>
-                            <td>
-                                {{-- Tombol Aksi --}}
-                                @if ($billing->status == 'pending' || $billing->status == 'unpaid' || $billing->status == 'rejected')
-                                    <button type="button" class="btn btn-primary btn-sm" 
-                                            data-toggle="modal" 
-                                            data-target="#payModal" 
-                                            data-id="{{ $billing->id }}"
-                                            data-amount="{{ number_format($billing->total_amount, 0, ',', '.') }}">
-                                        <i class="fas fa-upload"></i> Bayar / Upload
-                                    </button>
-                                @elseif ($billing->status == 'pending_verification')
-                                    <button class="btn btn-secondary btn-sm" disabled>Sedang Diverifikasi</button>
-                                @else
-                                    <button class="btn btn-success btn-sm" disabled>Lunas</button>
-                                @endif
-                            </td>
-                        </tr>
-                    @empty
-                        <tr>
-                            <td colspan="6" class="text-center">Anda belum memiliki tagihan.</td>
-                        </tr>
-                    @endforelse
-                </tbody>
+               <tbody id="member-billing-body">
+        @include('member.billings.partials.table_body')
+    </tbody>
             </table>
         </div>
         
@@ -143,6 +98,18 @@
         // Pastikan route 'billings.pay' sudah ada di routes/web.php
         var actionUrl = "{{ url('member/billings') }}/" + id + "/pay";
         modal.find('#payForm').attr('action', actionUrl);
+    });
+    function refreshMemberBilling() {
+        $.ajax({
+            url: "{{ route('member.billings.index') }}",
+            type: 'GET',
+            success: function(html) {
+                $('#member-billing-body').html(html);
+            }
+        });
+    }
+    $(document).ready(function() {
+        setInterval(refreshMemberBilling, 3000);
     });
 </script>
 @endpush

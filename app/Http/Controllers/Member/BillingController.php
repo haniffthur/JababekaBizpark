@@ -15,10 +15,14 @@ class BillingController extends Controller
      * Menampilkan daftar tagihan MILIK user yang sedang login.
      * Rute: GET member/billings
      */
-    public function index(): View
+   public function index(Request $request) // Tambah Request $request
     {
-        // Ambil data tagihan HANYA milik user yang login
-        $billings = Auth::user()->billings()->latest()->paginate(15);
+        $billings = \Illuminate\Support\Facades\Auth::user()->billings()->latest()->paginate(15);
+        
+        // AJAX Polling Member
+        if ($request->ajax()) {
+            return view('member.billings.partials.table_body', compact('billings'))->render();
+        }
         
         return view('member.billings.index', compact('billings'));
     }

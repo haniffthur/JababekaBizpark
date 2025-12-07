@@ -13,6 +13,10 @@ class Kernel extends ConsoleKernel
     protected function schedule(Schedule $schedule): void
     {
         // $schedule->command('inspire')->hourly();
+        $schedule->command('ipl:generate')
+                 ->monthlyOn(1, '00:00')
+                 ->timezone('Asia/Jakarta') // Penting agar sesuai jam Indonesia
+                 ->appendOutputTo(storage_path('logs/scheduler.log')); // Catat log biar ketahuan jalan/enggak
     }
 
     /**
