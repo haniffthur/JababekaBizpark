@@ -32,11 +32,23 @@
     <a class="nav-link" href="{{ route('admin.qr.approvals.index') }}">
         <i class="fas fa-fw fa-check-circle text-primary"></i>
         <span class="ml-2">Persetujuan QR</span>
-        
-        {{-- Badge Notifikasi (Tetap Ada & Konsisten) --}}
+
+        {{-- Badge untuk TRUK --}}
         <span id="sidebar-pending-badge" class="badge badge-danger badge-counter ml-1" 
               style="font-size: 0.7rem; display: {{ (isset($pendingQrCount) && $pendingQrCount > 0) ? 'inline-block' : 'none' }};">
             {{ $pendingQrCount ?? 0 }}
+        </span>
+    </a>
+</li>
+<li class="nav-item {{ request()->routeIs('admin.personal-qrs.approvals') ? 'active' : '' }}">
+    <a class="nav-link" href="{{ route('admin.personal-qrs.approvals') }}">
+        <i class="fas fa-fw fa-user-check text-primary"></i>
+        <span class="ml-2">Approve QR Pribadi</span>
+
+        {{-- Badge untuk PRIBADI --}}
+        <span class="badge badge-danger badge-counter ml-1" 
+              style="font-size: 0.7rem; display: {{ (isset($pendingPersonalQrCount) && $pendingPersonalQrCount > 0) ? 'inline-block' : 'none' }};">
+            {{ $pendingPersonalQrCount ?? 0 }}
         </span>
     </a>
 </li>

@@ -15,6 +15,7 @@ class PersonalQr extends Model
         'license_plate',
         'code',
         'status',
+        'is_approved',
     ];
 
     public function user(): BelongsTo

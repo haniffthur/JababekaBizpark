@@ -6,6 +6,7 @@ use Illuminate\Support\ServiceProvider;
 use Illuminate\Support\Facades\Blade;
 use Illuminate\Support\Facades\View; // <-- 1. TAMBAHKAN IMPORT INI
 use App\Models\QrCode;
+use App\Models\PersonalQr;
 class AppServiceProvider extends ServiceProvider
 {
     /**
@@ -27,11 +28,19 @@ class AppServiceProvider extends ServiceProvider
             // Jika belum, instal dulu.
             return "<?php echo QrCode::size(150)->generate($expression); ?>";
         });
-        View::composer('layouts.partials._admin_sidebar', function ($view) {
-        $pendingCount = QrCode::where('is_approved', false)
-                              ->where('status', 'baru')
-                              ->count();
-        $view->with('pendingQrCount', $pendingCount);
+       View::composer('layouts.partials._admin_sidebar', function ($view) {
+        
+        // 1. Hitung Pending QR TRUK
+        $pendingQrCount = QrCode::where('is_approved', false)
+                                ->where('status', 'baru')
+                                ->count();
+        
+        // 2. Hitung Pending QR PRIBADI (BARU)
+        $pendingPersonalQrCount = PersonalQr::where('is_approved', false)->count();
+        
+        // Kirim kedua variabel ke view
+        $view->with('pendingQrCount', $pendingQrCount);
+        $view->with('pendingPersonalQrCount', $pendingPersonalQrCount);
     });
         // ---------------------------------
     }

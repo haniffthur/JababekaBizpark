@@ -30,10 +30,13 @@ class MemberController extends Controller
 
     public function store(Request $request): RedirectResponse
     {
-        // ... (Logika store tetap sama seperti sebelumnya, copy dari kode yang sudah jalan) ...
-        // Agar tidak kepanjangan, saya asumsikan kode store kamu sudah aman.
-        // Jika butuh kode store lengkap lagi, kabari ya.
-        
+        // 1. BERSIHKAN FORMAT (4 Input Sekaligus)
+        $request->merge([
+            'plate_1' => $request->plate_1 ? strtoupper(str_replace(' ', '', $request->plate_1)) : null,
+            'plate_2' => $request->plate_2 ? strtoupper(str_replace(' ', '', $request->plate_2)) : null,
+            'plate_3' => $request->plate_3 ? strtoupper(str_replace(' ', '', $request->plate_3)) : null,
+            'plate_4' => $request->plate_4 ? strtoupper(str_replace(' ', '', $request->plate_4)) : null,
+        ]);
         // --- Versi Singkat untuk Store (Paste kode lama kamu di sini) ---
         $validator = Validator::make($request->all(), [
             'name' => 'required|string|max:255',
@@ -110,6 +113,13 @@ class MemberController extends Controller
      */
     public function update(Request $request, User $member): RedirectResponse
     {
+
+        $request->merge([
+            'plate_1' => $request->plate_1 ? strtoupper(str_replace(' ', '', $request->plate_1)) : null,
+            'plate_2' => $request->plate_2 ? strtoupper(str_replace(' ', '', $request->plate_2)) : null,
+            'plate_3' => $request->plate_3 ? strtoupper(str_replace(' ', '', $request->plate_3)) : null,
+            'plate_4' => $request->plate_4 ? strtoupper(str_replace(' ', '', $request->plate_4)) : null,
+        ]);
         // 1. Validasi Dasar
         $rules = [
             'name' => 'required|string|max:255',

@@ -72,6 +72,9 @@ class PersonalQrController extends Controller
      */
     public function update(Request $request, PersonalQr $personalQr): RedirectResponse
     {
+        $request->merge([
+            'license_plate' => strtoupper(str_replace(' ', '', $request->license_plate))
+        ]);
         // 1. Validasi
         $validator = Validator::make($request->all(), [
             'name' => 'required|string|max:255', // Nama Slot (misal: Mobil Alphard)
@@ -119,4 +122,34 @@ class PersonalQrController extends Controller
         return redirect()->route('admin.personal-qrs.member', $userId)
                          ->with('success', 'QR Pribadi berhasil dihapus.');
     }
+     public function approvals(): View
+    {
+        $pendingRequests = PersonalQr::where('is_approved', false)
+                                     ->with('user')
+                                     ->latest()
+                                     ->get();
+
+        return view('admin.personal_qrs.approvals', compact('pendingRequests'));
+    }
+   public function approve(PersonalQr $personalQr): RedirectResponse
+    {
+        // Ubah status menjadi disetujui
+        $personalQr->is_approved = true;
+        $personalQr->save();
+
+        return back()->with('success', 'Permintaan QR Pribadi berhasil disetujui.');
+    }
+
+    /**
+     * Menolak permintaan QR Pribadi (Hapus Data).
+     */
+    public function reject(PersonalQr $personalQr): RedirectResponse
+    {
+        // Hapus permintaan QR
+        $personalQr->delete();
+
+        return back()->with('success', 'Permintaan QR Pribadi telah ditolak dan dihapus.');
+    }
+
+  
 }

@@ -146,6 +146,10 @@ class GateApiController extends Controller
             $this->createGateLog($qrCode->truck_id, $request, 'Gagal Masuk', 'Plat tidak cocok.');
             return $this->formatResponse(0, 'AKSESDITOLAK', $request);
         }
+        if (!$qrCode->is_approved) {
+            $this->createGateLog(null, $request, 'Gagal Masuk (Pribadi)', 'QR Pribadi belum disetujui Admin.', $qrCode->user_id);
+            return $this->formatResponse(0, 'Akses Ditolak: QR Belum Disetujui Admin.', $request);
+        }
 
         // Sukses
         $qrCode->status = 'aktif'; $qrCode->save();

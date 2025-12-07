@@ -39,22 +39,23 @@ class TruckController extends Controller
      * Menyimpan truk baru ke database.
      * Rute: POST member/trucks
      */
-    public function store(Request $request): RedirectResponse
+    public function store(Request $request)
     {
-        $validator = Validator::make($request->all(), [
-            'license_plate' => 'required|string|max:20|unique:trucks',
+        // 1. BERSIHKAN FORMAT (Hapus Spasi & Uppercase)
+        $request->merge([
+            'license_plate' => strtoupper(str_replace(' ', '', $request->license_plate))
+        ]);
+
+        // 2. Validasi (Akan mengecek versi tanpa spasi)
+        $request->validate([
+            'license_plate' => 'required|string|unique:trucks,license_plate',
             'driver_name' => 'nullable|string|max:255',
         ]);
 
-        if ($validator->fails()) {
-            return back()->withErrors($validator)->withInput();
-        }
+        // 3. Simpan
+        $request->user()->trucks()->create($request->all());
 
-        // Buat truk baru dan otomatis kaitkan dengan user_id yang sedang login
-        Auth::user()->trucks()->create($validator->validated());
-
-        return redirect()->route('member.trucks.index')
-                         ->with('success', 'Truk baru berhasil didaftarkan.');
+        return redirect()->route('member.trucks.index')->with('success', 'Truk berhasil didaftarkan.');
     }
 
     /**
@@ -76,30 +77,25 @@ class TruckController extends Controller
      * Mengupdate data truk di database.
      * Rute: PUT/PATCH member/trucks/{truck}
      */
-    public function update(Request $request, Truck $truck): RedirectResponse
+    public function update(Request $request, Truck $truck)
     {
-        // Otorisasi pakai Gate
-        if (Gate::denies('manage-truck', $truck)) {
-            abort(403);
-        }
+        if ($truck->user_id !== Auth::id()) abort(403);
 
-        $validator = Validator::make($request->all(), [
-            'license_plate' => [
-                'required', 'string', 'max:20',
-                Rule::unique('trucks')->ignore($truck->id), // Unik, kecuali diri sendiri
-            ],
+        // 1. BERSIHKAN FORMAT
+        $request->merge([
+            'license_plate' => strtoupper(str_replace(' ', '', $request->license_plate))
+        ]);
+
+        // 2. Validasi
+        $request->validate([
+            'license_plate' => ['required', 'string', \Illuminate\Validation\Rule::unique('trucks')->ignore($truck->id)],
             'driver_name' => 'nullable|string|max:255',
         ]);
 
-        if ($validator->fails()) {
-            return back()->withErrors($validator)->withInput();
-        }
+        // 3. Update
+        $truck->update($request->all());
 
-        // Update truk
-        $truck->update($validator->validated());
-
-        return redirect()->route('member.trucks.index')
-                         ->with('success', 'Data truk berhasil diperbarui.');
+        return redirect()->route('member.trucks.index')->with('success', 'Data truk diperbarui.');
     }
 
     /**

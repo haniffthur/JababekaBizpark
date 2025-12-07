@@ -143,66 +143,73 @@
     {{-- ========================================== --}}
     @if(auth()->check() && auth()->user()->role == 'admin')
     <script>
-        var globalLastCount = -1; // Penanda awal
+        var lastTruckCount = -1;
+    var lastPersonalCount = -1;
 
-        function checkGlobalNotifications() {
-            // Debug: Cek apakah fungsi jalan
-            // console.log("Mengecek notifikasi..."); 
+    function checkGlobalNotifications() {
+        $.ajax({
+            url: "{{ route('admin.api.check.pending') }}", // Pastikan route ini benar
+            type: 'GET',
+            dataType: 'json',
+            success: function(response) {
+                
+                // Update Badges Sidebar
+                var truckBadge = $('#sidebar-pending-badge'); // Badge QR Truk
+                var personalBadge = $('#sidebar-personal-pending-badge'); // Badge QR Pribadi (Buat ID ini di sidebar!)
 
-            $.ajax({
-                // Pastikan nama route ini sesuai dengan routes/web.php
-                url: "{{ route('admin.api.check.pending') }}", 
-                type: 'GET',
-                dataType: 'json',
-                success: function(response) {
-                    var currentCount = response.count;
-                    var badge = $('#sidebar-pending-badge');
-
-                    // A. Update Badge Sidebar
-                    if (currentCount > 0) {
-                        badge.text(currentCount).show();
-                    } else {
-                        badge.hide();
-                    }
-
-                    // Debug: Lihat angka di console
-                    // console.log("Pending: " + currentCount + ", Last: " + globalLastCount);
-
-                    // B. Tampilkan Alert JIKA JUMLAH BERTAMBAH
-                    // Syarat: 
-                    // 1. Bukan load pertama (globalLastCount != -1)
-                    // 2. Jumlah sekarang LEBIH BESAR dari sebelumnya
-                    if (globalLastCount !== -1 && currentCount > globalLastCount) {
-                        
-                        var selisih = currentCount - globalLastCount;
-                        
-                        Swal.fire({
-                            title: 'Permintaan Baru!',
-                            text: 'Ada ' + selisih + ' permintaan QR Code baru masuk.',
-                            icon: 'info',
-                            position: 'top-end',
-                            toast: true,
-                            showConfirmButton: true,
-                            confirmButtonText: 'Lihat',
-                            showCancelButton: true,
-                            cancelButtonText: 'Tutup',
-                            timer: 10000,
-                            timerProgressBar: true
-                        }).then((result) => {
-                            if (result.isConfirmed) {
-                                window.location.href = "{{ route('admin.qr.approvals.index') }}";
-                            }
-                        });
-                    }
-
-                    // Simpan jumlah untuk pengecekan selanjutnya
-                    globalLastCount = currentCount;
-                },
-                error: function(xhr) {
-                    console.error("Error Notifikasi:", xhr.responseText);
+                // Update angka badge Truk
+                if (response.truck_count > 0) {
+                    truckBadge.text(response.truck_count).show();
+                } else {
+                    truckBadge.hide();
                 }
-            });
-        }
+                
+                // Update angka badge Pribadi (Asumsi kamu sudah tambah ID ini di sidebar)
+                if (personalBadge.length && response.personal_count > 0) {
+                    personalBadge.text(response.personal_count).show();
+                } else if (personalBadge.length) {
+                    personalBadge.hide();
+                }
+
+                // --- LOGIKA ALERT SPESIFIK ---
+
+                // 1. Alert QR Truk
+                if (lastTruckCount !== -1 && response.truck_count > lastTruckCount) {
+                    Swal.fire({
+                        title: 'Permintaan QR Truk!',
+                        text: 'Ada permintaan QR Code TRUK baru.',
+                        icon: 'info',
+                        toast: true,
+                        position: 'top-end',
+                        showConfirmButton: true,
+                        confirmButtonText: 'Lihat',
+                        timer: 8000
+                    }).then((result) => {
+                        if (result.isConfirmed) window.location.href = "{{ route('admin.qr.approvals.index') }}";
+                    });
+                }
+
+                // 2. Alert QR Pribadi
+                if (lastPersonalCount !== -1 && response.personal_count > lastPersonalCount) {
+                    Swal.fire({
+                        title: 'Permintaan QR Pribadi!',
+                        text: 'Ada permintaan QR PRIBADI baru.',
+                        icon: 'warning', // Beda icon biar beda rasa
+                        toast: true,
+                        position: 'top-end',
+                        showConfirmButton: true,
+                        confirmButtonText: 'Lihat',
+                        timer: 8000
+                    }).then((result) => {
+                        if (result.isConfirmed) window.location.href = "{{ route('admin.personal-qrs.approvals') }}";
+                    });
+                }
+
+                lastTruckCount = response.truck_count;
+                lastPersonalCount = response.personal_count;
+            }
+        });
+    }
 
         $(document).ready(function() {
             checkGlobalNotifications(); // Cek pas load
