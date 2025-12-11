@@ -19,7 +19,7 @@
             {{-- Ganti dengan logo GudangJababeka jika ada --}}
             <i class="fas fa-warehouse fa-lg"></i>
         </div>
-        <div class="sidebar-brand-text mx-2">Bizpark</div>
+        <div class="sidebar-brand-text mx-2">BizparkJ</div>
     </a>
 
     <li class="nav-item {{ request()->routeIs('dashboard') ? 'active' : '' }}">
