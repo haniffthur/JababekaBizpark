@@ -242,7 +242,7 @@ class GateApiController extends Controller
             'billing_amount' => $billingAmount
         ]);
 
-        return $this->formatResponse(1, 'Sampai Jumpa (Truk)', $request);
+        return $this->formatResponse(1, 'SampaiJumpa', $request);
     }
 
     private function handleQrPribadiCheckOut(Request $request, PersonalQr $qrCode, string $licensePlate): JsonResponse
