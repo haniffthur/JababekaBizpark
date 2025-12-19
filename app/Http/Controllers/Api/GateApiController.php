@@ -188,14 +188,14 @@ class GateApiController extends Controller
         return $this->formatResponse(1, 'Akses OK', $request);
     }
 
-   private function handleQrTrukCheckOut(Request $request, QrCode $qrCode, string $licensePlate, $ioMode): JsonResponse
+   private function handleQrTrukCheckOut(Request $request, QrCode $qrCode, string $licensePlate): JsonResponse
     {
         if ($qrCode->status !== 'aktif' || $qrCode->truck->license_plate !== $licensePlate) {
-            return $this->formatResponse(0, 'Plat tidak cocok atau QR tidak aktif.', $request, $ioMode);
+            return $this->formatResponse(0, 'Plat tidak cocok atau QR tidak aktif.', $request);
         }
 
         $lastCheckInLog = GateLog::where('truck_id', $qrCode->truck_id)->where('status', 'Berhasil Masuk (Truk)')->latest('check_in_at')->first();
-        if (!$lastCheckInLog) return $this->formatResponse(0, 'Log masuk tidak ditemukan.', $request, $ioMode);
+        if (!$lastCheckInLog) return $this->formatResponse(0, 'Log masuk tidak ditemukan.', $request);
 
         $checkInTime = Carbon::parse($lastCheckInLog->check_in_at);
         $checkOutTime = now();
@@ -242,13 +242,18 @@ class GateApiController extends Controller
             'billing_amount' => $billingAmount
         ]);
 
-        return $this->formatResponse(1, 'Sampai Jumpa (Truk)', $request, $ioMode);
+        return $this->formatResponse(1, 'Sampai Jumpa (Truk)', $request);
     }
 
     private function handleQrPribadiCheckOut(Request $request, PersonalQr $qrCode, string $licensePlate): JsonResponse
     {
         if ($qrCode->status !== 'aktif' || $qrCode->license_plate !== $licensePlate) {
             return $this->formatResponse(0, 'AKSESDITOLAK', $request);
+        }
+
+         if ($qrCode->user->ipl_status !== 'paid') {
+            $this->createGateLog(null, $request, 'Gagal Masuk (Pribadi)', 'IPL Belum Lunas', $qrCode->user_id);
+            return $this->formatResponse(0, 'BELUM LUNAS', $request);
         }
 
         $qrCode->status = 'baru'; // Reset

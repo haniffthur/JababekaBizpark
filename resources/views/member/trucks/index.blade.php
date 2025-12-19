@@ -48,7 +48,7 @@
                                     <i class="fas fa-edit"></i> Edit
                                 </a>
                                 
-                                <form action="{{ route('member.trucks.destroy', $truck->id) }}" method="POST" 
+                                <!-- <form action="{{ route('member.trucks.destroy', $truck->id) }}" method="POST" 
                                       class="d-inline" 
                                       onsubmit="return confirm('Apakah Anda yakin ingin menghapus truk ini? Semua QR Code terkait akan ikut terhapus.');">
                                     @csrf
@@ -56,7 +56,7 @@
                                     <button type="submit" class="btn btn-sm btn-danger">
                                         <i class="fas fa-trash"></i> Hapus
                                     </button>
-                                </form>
+                                </form> -->
                             </td>
                         </tr>
                     @empty
