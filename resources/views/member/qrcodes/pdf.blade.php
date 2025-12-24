@@ -86,7 +86,7 @@
             <div class="qr-code-box">
                 {{-- Ini adalah gambar PNG Base64 yang kita buat di controller --}}
                 <img src="{{ $qrCodeImage }}" alt="QR Code">
-                <code>{{ $qrcode->code }}</code>
+                <!-- <code>{{ $qrcode->code }}</code> -->
             </div>
         </div>
 

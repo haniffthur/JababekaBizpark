@@ -5,48 +5,72 @@ namespace App\Console\Commands;
 use Illuminate\Console\Command;
 use App\Models\User;
 use App\Models\Billing;
+use App\Models\DailyCharge; // Model baru
+use App\Models\Setting;
 use Carbon\Carbon;
+use Illuminate\Support\Facades\DB;
 
 class GenerateMonthlyBills extends Command
 {
     protected $signature = 'billing:monthly';
-    protected $description = 'Generate tagihan bulanan dan blokir akses member yang belum bayar';
+    protected $description = 'Rekap tagihan bulanan (IPL + Inap) dan blokir member';
 
     public function handle()
     {
-        $this->info('Memulai proses tagihan bulanan...');
+        $this->info('Mulai Generate Tagihan Bulanan...');
 
-        $members = User::where('role', 'member')->get();
-        $bulanIni = Carbon::now()->startOfMonth();
+        // Ambil nominal IPL dari Setting (Default 100rb)
+        $nominalIPL = (float) Setting::where('key', 'ipl_fee')->value('value') ?? 100000;
         
-        // Nominal IPL (Bisa diambil dari SettingController nanti)
-        $nominalIPL = 100000; 
+        // Ambil member aktif
+        $members = User::where('role', 'member')->get(); // Sesuaikan query member Anda
 
         foreach ($members as $member) {
-            // 1. Cek apakah sudah ada tagihan bulan ini?
-            // Kita cek range tanggal pembuatan tagihan
-            $cekTagihan = Billing::where('user_id', $member->id)
-                ->whereBetween('created_at', [$bulanIni, Carbon::now()->endOfMonth()])
-                ->exists();
-
-            if (!$cekTagihan) {
-                // 2. Buat Tagihan Baru
-                Billing::create([
-                    'user_id' => $member->id,
-                    'total_amount' => $nominalIPL,
-                    'status' => 'unpaid',
-                    'due_date' => Carbon::now()->addDays(10), // Jatuh tempo tgl 10
-                ]);
+            // Gunakan Transaction agar Data Konsisten
+            DB::transaction(function () use ($member, $nominalIPL) {
                 
-                // 3. BLOKIR AKSES (Sesuai Request Poin 4)
-                // Member langsung jadi 'unpaid' begitu tanggal 1 muncul
+                // A. Ambil Biaya Inap yang Belum Ditagih (Status: is_billed = false)
+                // Kita ambil semua yang menumpuk dari bulan lalu sampai detik ini
+                $pendingCharges = DailyCharge::where('user_id', $member->id)
+                                    ->where('is_billed', false)
+                                    ->get();
+
+                // B. Hitung Total
+                $totalInap = $pendingCharges->sum('amount');
+                $grandTotal = $nominalIPL + $totalInap;
+
+                // C. Buat Tagihan (Billing)
+                $description = "Iuran Pengelolaan Lingkungan (IPL): Rp " . number_format($nominalIPL);
+                if ($totalInap > 0) {
+                    $description .= " + Biaya Inap Truk (x" . $pendingCharges->count() . " kejadian): Rp " . number_format($totalInap);
+                }
+
+                $newBill = Billing::create([
+                    'user_id'      => $member->id,
+                    'total_amount' => $grandTotal,
+                    'status'       => 'unpaid',
+                    'due_date'     => Carbon::now()->addDays(10), // Jatuh tempo tgl 10
+                    'description'  => $description
+                ]);
+
+                // D. Update DailyCharges (Tandai sudah ditagih agar tidak dobel bulan depan)
+                if ($pendingCharges->count() > 0) {
+                    DailyCharge::whereIn('id', $pendingCharges->pluck('id'))
+                        ->update([
+                            'is_billed' => true,
+                            'ipl_bill_id' => $newBill->id
+                        ]);
+                }
+
+                // E. Blokir Akses Member (Sampai bayar)
                 $member->ipl_status = 'unpaid';
                 $member->save();
 
-                $this->info("Tagihan dibuat & Akses diblokir untuk: " . $member->name);
-            }
+            }); // End Transaction
+
+            $this->info("Tagihan User {$member->name} Selesai.");
         }
 
-        $this->info('Selesai.');
+        $this->info('Semua proses selesai.');
     }
 }

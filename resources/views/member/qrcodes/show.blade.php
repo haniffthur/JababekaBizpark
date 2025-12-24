@@ -67,7 +67,7 @@
 
         <hr class="my-4">
 
-        <h5 class="mb-3">Kode: <code>{{ $qrcode->code }}</code></h5>
+        <!-- <h5 class="mb-3">Kode: <code>{{ $qrcode->code }}</code></h5> -->
 
        <div class="d-flex justify-content-center">
     {!! \SimpleSoftwareIO\QrCode\Facades\QrCode::size(300)->generate($qrcode->code) !!}

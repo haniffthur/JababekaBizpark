@@ -64,7 +64,7 @@
                     <tr>
                         <th>ID</th>
                         <th>Untuk Truk (Plat)</th>
-                        <th>Kode Unik</th>
+                        <!-- <th>Kode Unik</th> -->
                         <th>Status</th>
                         <th>Tgl. Dibuat</th>
                         <th>Aksi</th>
@@ -76,7 +76,7 @@
                         <tr>
                             <td>{{ $qr->id }}</td>
                             <td>{{ $qr->truck->license_plate ?? 'N/A' }}</td>
-                            <td><code>{{ $qr->code }}</code></td>
+                            <!-- <td><code>{{ $qr->code }}</code></td> -->
                             <td>
                                 @if ($qr->status == 'baru')
                                     <span class="badge badge-primary">Approved</span>

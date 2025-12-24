@@ -11,7 +11,7 @@
                     
                     <div class="col-md-6 text-center mb-3 mb-md-0">
                         @QrCode($qr->code)
-                        <code class="d-block mt-2" style="font-size: 0.8rem; color: #e74a3b; word-break: break-all;">{{ $qr->code }}</code>
+                        <!-- <code class="d-block mt-2" style="font-size: 0.8rem; color: #e74a3b; word-break: break-all;">{{ $qr->code }}</code> -->
                     </div>
 
                     <div class="col-md-6">
