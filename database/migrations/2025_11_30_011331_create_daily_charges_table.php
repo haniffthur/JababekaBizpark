@@ -6,26 +6,25 @@ use Illuminate\Support\Facades\Schema;
 
 return new class extends Migration
 {
-    /**
-     * Run the migrations.
-     */
-  public function up(): void
-{
-    Schema::create('daily_charges', function (Blueprint $table) {
-        $table->id();
-        $table->foreignId('user_id')->constrained()->onDelete('cascade');
-        $table->foreignId('truck_id')->constrained()->onDelete('cascade'); // Referensi truk mana
-        $table->decimal('amount', 15, 2); // Biaya inap
-        $table->date('charge_date'); // Tanggal kejadian
-        $table->boolean('is_billed')->default(false); // Apakah sudah masuk tagihan bulanan?
-        $table->foreignId('ipl_bill_id')->nullable(); // Nanti diisi ID tagihan bulanan
-        $table->timestamps();
-    });
-}
+    public function up(): void
+    {
+        Schema::create('daily_charges', function (Blueprint $table) {
+            $table->id();
+            $table->foreignId('user_id')->constrained('users')->onDelete('cascade');
+            $table->foreignId('truck_id')->constrained('trucks')->onDelete('cascade');
+            
+            $table->decimal('amount', 15, 2);
+            $table->date('charge_date');
+            
+            $table->boolean('is_billed')->default(false);
+            
+            // Menghubungkan ke tabel billings (nullable karena belum tentu langsung ditagih)
+            $table->foreignId('ipl_bill_id')->nullable()->constrained('billings')->onDelete('set null');
+            
+            $table->timestamps();
+        });
+    }
 
-    /**
-     * Reverse the migrations.
-     */
     public function down(): void
     {
         Schema::dropIfExists('daily_charges');

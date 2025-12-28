@@ -1,8 +1,10 @@
-{{-- resources/views/admin/billings/partials/table_body.blade.php --}}
 @forelse ($billings as $billing)
     <tr>
         <td>#{{ $billing->id }}</td>
-        <td><strong>{{ $billing->user->name ?? 'Member Dihapus' }}</strong></td>
+        <td>
+            <strong>{{ $billing->user->name ?? 'Member Dihapus' }}</strong>
+            <br><small class="text-muted">{{ $billing->description }}</small>
+        </td>
         <td>Rp {{ number_format($billing->total_amount, 0, ',', '.') }}</td>
         <td>
             @if ($billing->status == 'paid')
@@ -24,21 +26,22 @@
                 <span class="text-muted small">-</span>
             @endif
         </td>
-        <td>{{ $billing->due_date ? $billing->due_date->format('d/m/Y') : '-' }}</td>
+        <td>{{ $billing->due_date ? \Carbon\Carbon::parse($billing->due_date)->format('d/m/Y') : '-' }}</td>
         <td style="min-width: 150px;">
             @if($billing->status == 'pending_verification')
-                <form action="{{ route('admin.billings.approve', $billing->id) }}" method="POST" class="d-inline">
-                    @csrf <button class="btn btn-success btn-sm" title="Setujui" onclick="return confirm('Setujui?')"><i class="fas fa-check"></i></button>
-                </form>
-                <form action="{{ route('admin.billings.reject', $billing->id) }}" method="POST" class="d-inline">
-                    @csrf <button class="btn btn-danger btn-sm" title="Tolak" onclick="return confirm('Tolak?')"><i class="fas fa-times"></i></button>
-                </form>
-            @else
-                <form action="{{ route('admin.billings.destroy', $billing->id) }}" method="POST" class="d-inline">
-                    @csrf @method('DELETE')
-                    <button class="btn btn-sm btn-outline-danger" onclick="return confirm('Hapus?')" title="Hapus"><i class="fas fa-trash"></i></button>
-                </form>
+                <button class="btn btn-success btn-sm btn-action" data-id="{{ $billing->id }}" data-action="approve" title="Setujui">
+                    <i class="fas fa-check"></i>
+                </button>
+                <button class="btn btn-danger btn-sm btn-action" data-id="{{ $billing->id }}" data-action="reject" title="Tolak">
+                    <i class="fas fa-times"></i>
+                </button>
             @endif
+            
+            {{-- TOMBOL DETAIL (Pengganti Delete) --}}
+            {{-- Kita beri class khusus 'btn-detail' agar beda logic dengan 'btn-action' --}}
+            <button class="btn btn-sm btn-info btn-detail" data-id="{{ $billing->id }}" title="Lihat Rincian">
+                <i class="fas fa-eye"></i>
+            </button>
         </td>
     </tr>
 @empty

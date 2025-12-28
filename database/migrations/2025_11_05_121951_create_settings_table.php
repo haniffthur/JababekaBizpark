@@ -8,11 +8,10 @@ return new class extends Migration
 {
     public function up(): void
     {
-        // Tabel ini untuk menyimpan setting key-value
         Schema::create('settings', function (Blueprint $table) {
             $table->id();
-            $table->string('key')->unique(); // Misal: 'overnight_rate'
-            $table->text('value')->nullable(); // Misal: '50000'
+            $table->string('key')->unique(); // Misal: 'overnight_rate', 'ipl_fee'
+            $table->text('value')->nullable();
             $table->timestamps();
         });
     }

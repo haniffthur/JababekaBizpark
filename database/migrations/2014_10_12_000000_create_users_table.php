@@ -15,8 +15,9 @@ return new class extends Migration
             $table->timestamp('email_verified_at')->nullable();
             $table->string('password');
             
-            // TAMBAHKAN INI: Sesuai tabel hak akses (Admin / Member)
-            $table->enum('role', ['admin', 'member'])->default('member'); 
+            // Hak Akses & Status Pembayaran
+            $table->enum('role', ['admin', 'member'])->default('member');
+            $table->enum('ipl_status', ['paid', 'unpaid', 'pending'])->default('paid'); // Default paid atau sesuaikan
             
             $table->rememberToken();
             $table->timestamps();

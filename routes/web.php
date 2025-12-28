@@ -9,7 +9,7 @@ use App\Http\Controllers\ProfileController;
 
 // Admin Controllers
 use App\Http\Controllers\Admin\MemberController;
-use App\Http\Controllers\Admin\BillingController as AdminBillingController;
+use App\Http\Controllers\Admin\BillingController;
 use App\Http\Controllers\Admin\GateManagementController;
 use App\Http\Controllers\Admin\SettingController;
 use App\Http\Controllers\Admin\AdminQrController; 
@@ -69,9 +69,17 @@ Route::middleware(['auth', 'role:admin'])->prefix('admin')->name('admin.')->grou
 
     // --- 2. OPERASIONAL (KEUANGAN & QR TRUK) ---
     // Billing (Keuangan)
-    Route::resource('billings', AdminBillingController::class);
-    Route::post('billings/{billing}/approve', [AdminBillingController::class, 'approve'])->name('billings.approve');
-    Route::post('billings/{billing}/reject', [AdminBillingController::class, 'reject'])->name('billings.reject');
+ Route::get('/billings', [BillingController::class, 'index'])->name('billings.index');
+    Route::post('/billings/generate', [BillingController::class, 'generateBills'])->name('billings.generate');
+    
+    // Route untuk aksi tabel
+    Route::post('/billings/{id}/approve', [BillingController::class, 'approve'])->name('billings.approve');
+    Route::post('/billings/{id}/reject', [BillingController::class, 'reject'])->name('billings.reject');
+    Route::delete('/billings/{id}', [BillingController::class, 'destroy'])->name('billings.destroy');
+    Route::get('/billings/{id}', [BillingController::class, 'show'])->name('billings.show');
+    
+    // Route tandai lunas (opsional, sesuaikan nama method di controller)
+    Route::patch('/billings/{id}/pay', [BillingController::class, 'markAsPaid'])->name('billings.markPaid');
 
     // Persetujuan QR Truk
     Route::get('qr-approvals', [AdminQrController::class, 'index'])->name('qr.approvals.index');

@@ -33,4 +33,9 @@ class Billing extends Model
     {
         return $this->belongsTo(User::class);
     }
+    public function dailyCharges()
+    {
+        // Hubungkan ke DailyCharge lewat kolom 'ipl_bill_id'
+        return $this->hasMany(DailyCharge::class, 'ipl_bill_id');
+    }
 }

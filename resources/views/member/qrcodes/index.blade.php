@@ -199,7 +199,7 @@ function fetchQrData() {
                     var row = '<tr>' +
                         '<td>' + qr.id + '</td>' +
                         '<td>' + (qr.truck ? qr.truck.license_plate : 'N/A') + '</td>' +
-                        '<td><code>' + qr.code + '</code></td>' +
+                        // '<td><code>' + qr.code + '</code></td>' +
                         '<td>' + getApprovedStatusBadge(qr.status) + '</td>' +
                         '<td>' + formatTime(qr.created_at) + '</td>' +
                         '<td>' + actionBtns + '</td>' +
