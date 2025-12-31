@@ -11,6 +11,7 @@ use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Validation\Rule;
 use Illuminate\Support\Str;
+use Barryvdh\DomPDF\Facade\Pdf;
 
 class PersonalQrController extends Controller
 {
@@ -150,6 +151,40 @@ class PersonalQrController extends Controller
 
         return back()->with('success', 'Permintaan QR Pribadi telah ditolak dan dihapus.');
     }
+    public function createForMember(User $member)
+    {
+        return view('admin.personal_qrs.create_for_member', compact('member'));
+    }
+
+    // Proses Simpan
+    public function storeForMember(Request $request, User $member)
+    {
+        $request->merge([
+            'license_plate' => strtoupper(str_replace(' ', '', $request->license_plate)),
+        ]);
+
+        $request->validate([
+            'name' => 'required|string|max:100', // Label: Misal "Mobil Dinas"
+            'license_plate' => 'required|string|max:20|unique:personal_qrs,license_plate',
+        ]);
+
+        // Buat QR (Langsung Approved karena Admin yang buat)
+        $customCode = now()->format('dmY') . strtoupper(Str::random(2));
+
+        PersonalQr::create([
+            'user_id' => $member->id,
+            'name' => $request->name,
+            'license_plate' => $request->license_plate,
+            'code' => $customCode,
+            'status' => 'baru',
+            'is_approved' => true, // Auto Approve
+        ]);
+
+        return redirect()->route('admin.members.show', $member->id)
+                         ->with('success', 'QR Pribadi tambahan berhasil dibuat.');
+    }
+    
+    
 
   
 }

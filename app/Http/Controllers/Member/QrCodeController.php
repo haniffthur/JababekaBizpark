@@ -17,7 +17,7 @@ use Illuminate\Http\JsonResponse; // <-- Tambahkan JsonResponse
 
 
 // Import SimpleSoftwareIO/Simple-QRcode
-use SimpleSoftwareIO\QrCode\Facades\QrCode as SimpleQrCode; 
+use SimpleSoftwareIO\QrCode\Facades\QrCode as SimpleQrCode;
 
 class QrCodeController extends Controller
 {
@@ -25,8 +25,8 @@ class QrCodeController extends Controller
      * Menampilkan daftar QR Code milik member yang sedang login.
      * Rute: GET member/qrcodes
      */
- // app/Http/Controllers/Member/QrCodeController.php
-public function index(Request $request): View|JsonResponse
+    // app/Http/Controllers/Member/QrCodeController.php
+    public function index(Request $request): View|JsonResponse
     {
         $truckIds = Auth::user()->trucks()->pluck('id');
 
@@ -34,18 +34,18 @@ public function index(Request $request): View|JsonResponse
         if ($request->ajax()) {
             // 1. Ambil data Approved (tidak perlu paginasi untuk polling real-time)
             $approvedQrs = QrCode::whereIn('truck_id', $truckIds)
-                                 ->where('is_approved', true)
-                                 ->with('truck') 
-                                 ->latest()
-                                 ->get(); // Ambil semua/terbaru
+                ->where('is_approved', true)
+                ->with('truck')
+                ->latest()
+                ->get(); // Ambil semua/terbaru
 
             // 2. Ambil data Pending
             $pendingQrs = QrCode::whereIn('truck_id', $truckIds)
-                                ->where('is_approved', false)
-                                ->with('truck')
-                                ->latest()
-                                ->get();
-            
+                ->where('is_approved', false)
+                ->with('truck')
+                ->latest()
+                ->get();
+
             return response()->json([
                 'approvedQrs' => $approvedQrs,
                 'pendingQrs' => $pendingQrs
@@ -56,18 +56,18 @@ public function index(Request $request): View|JsonResponse
 
         // 1. QR Codes Siap Digunakan (Approved) - Dengan Paginasi
         $qrCodes = QrCode::whereIn('truck_id', $truckIds)
-                         ->where('is_approved', true)
-                         ->with('truck') 
-                         ->latest()
-                         ->paginate(15);
+            ->where('is_approved', true)
+            ->with('truck')
+            ->latest()
+            ->paginate(15);
 
         // 2. Permintaan yang Masih Diproses (Pending)
         $pendingQrs = QrCode::whereIn('truck_id', $truckIds)
-                            ->where('is_approved', false)
-                            ->with('truck')
-                            ->latest()
-                            ->get();
-        
+            ->where('is_approved', false)
+            ->with('truck')
+            ->latest()
+            ->get();
+
         return view('member.qrcodes.index', compact('qrCodes', 'pendingQrs'));
     }
 
@@ -85,7 +85,7 @@ public function index(Request $request): View|JsonResponse
      * Menyimpan QR Code baru ke database.
      * Rute: POST member/qrcodes
      */
-  public function store(Request $request): RedirectResponse
+    public function store(Request $request): RedirectResponse
     {
         // ============================================================
         // == 1. VALIDASI BARU: CEK STATUS BAYAR IPL MEMBER ==
@@ -113,8 +113,8 @@ public function index(Request $request): View|JsonResponse
 
         // 4. Validasi Truk Sedang Dalam Proses (QR Aktif)
         $existingActiveQr = QrCode::where('truck_id', $truck->id)
-                                  ->whereIn('status', ['baru', 'aktif'])
-                                  ->first();
+            ->whereIn('status', ['baru', 'aktif'])
+            ->first();
 
         if ($existingActiveQr) {
             $statusPesan = $existingActiveQr->status == 'baru' ? 'menunggu digunakan' : 'sedang berada di dalam gudang';
@@ -127,14 +127,14 @@ public function index(Request $request): View|JsonResponse
         QrCode::create([
             'truck_id' => $request->truck_id,
             'code' => $uniqueCode,
-            'status' => 'baru', 
+            'status' => 'baru',
             'is_approved' => false, // Tetap butuh persetujuan admin
         ]);
 
         // (Opsional) Trigger Notifikasi ke Admin di sini
 
         return redirect()->route('member.qrcodes.index')
-                         ->with('success', 'Permintaan QR Code berhasil dibuat. Menunggu konfirmasi Admin.');
+            ->with('success', 'Permintaan QR Code berhasil dibuat. Menunggu konfirmasi Admin.');
     }
 
     /**
@@ -145,7 +145,7 @@ public function index(Request $request): View|JsonResponse
     {
         Gate::authorize('manage-qrcode', $qrcode);
         $qrcode->load('truck');
-        
+
         // Web View akan menggunakan SimpleQrCode langsung di Blade
         return view('member.qrcodes.show', compact('qrcode'));
     }
@@ -161,7 +161,7 @@ public function index(Request $request): View|JsonResponse
 
         // 1. GENERATE QR CODE MENGGUNAKAN SIMPLE QR CODE
         // Kita paksa output PNG Base64 di Controller untuk menghindari konflik Dompdf/Imagick.
-        
+
         $qrCodeImage = 'data:image/png;base64,' . base64_encode(
             SimpleQrCode::format('png')->size(300)->errorCorrection('H')->generate($qrcode->code)
         );
@@ -169,7 +169,7 @@ public function index(Request $request): View|JsonResponse
         // 2. Data yang akan dikirim ke view PDF
         $data = [
             'qrcode' => $qrcode,
-            'qrCodeImage' => $qrCodeImage 
+            'qrCodeImage' => $qrCodeImage
         ];
 
         // 3. Render view 'pdf.blade.php'
@@ -186,11 +186,11 @@ public function index(Request $request): View|JsonResponse
     public function destroy(QrCode $qrcode): RedirectResponse
     {
         Gate::authorize('manage-qrcode', $qrcode);
-        
+
         if ($qrcode->status === 'aktif') {
             return back()->with('error', 'Tidak bisa menghapus QR Code yang sedang aktif (di dalam gudang).');
         }
-        
+
         try {
             $qrcode->delete();
             return redirect()->route('member.qrcodes.index')->with('success', 'QR Code berhasil dihapus.');
@@ -198,5 +198,5 @@ public function index(Request $request): View|JsonResponse
             return back()->with('error', 'Gagal menghapus QR Code.');
         }
     }
-    
+
 }

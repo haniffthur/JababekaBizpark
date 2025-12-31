@@ -14,7 +14,7 @@ use App\Http\Controllers\Admin\GateManagementController;
 use App\Http\Controllers\Admin\SettingController;
 use App\Http\Controllers\Admin\AdminQrController; 
 use App\Http\Controllers\Admin\GateMachineController;
-use App\Http\Controllers\Admin\PersonalQrController as AdminPersonalQrController;
+use App\Http\Controllers\Admin\PersonalQrController;
 
 
 // Member Controllers
@@ -66,6 +66,14 @@ Route::middleware(['auth', 'role:admin'])->prefix('admin')->name('admin.')->grou
     // --- 1. MANAJEMEN DATA ---
     Route::resource('members', MemberController::class);
     Route::get('members/data', [MemberController::class, 'getMemberData'])->name('members.data'); // AJAX
+  Route::get('/members/{member}/trucks/create', [\App\Http\Controllers\Admin\TruckController::class, 'createForMember'])->name('members.trucks.create');
+    Route::post('/members/{member}/trucks', [\App\Http\Controllers\Admin\TruckController::class, 'storeForMember'])->name('members.trucks.store');
+
+    // 2. ROUTE KHUSUS MENAMBAH QR PRIBADI (EXTRA) UNTUK MEMBER
+    Route::get('/members/{member}/personal-qrs/create', [PersonalQrController::class, 'createForMember'])->name('members.personal-qrs.create');
+    Route::post('/members/{member}/personal-qrs', [PersonalQrController::class, 'storeForMember'])->name('members.personal-qrs.store');
+
+    
 
     // --- 2. OPERASIONAL (KEUANGAN & QR TRUK) ---
     // Billing (Keuangan)
@@ -100,16 +108,16 @@ Route::middleware(['auth', 'role:admin'])->prefix('admin')->name('admin.')->grou
 
     // Manajemen & Persetujuan QR Pribadi
     // (Urutan Penting: Route spesifik harus sebelum Resource)
-    Route::get('personal-qrs/approvals', [AdminPersonalQrController::class, 'approvals'])->name('personal-qrs.approvals');
-   Route::post('personal-qrs/{personalQr}/approve', [AdminPersonalQrController::class, 'approve'])
+    Route::get('personal-qrs/approvals', [PersonalQrController::class, 'approvals'])->name('personal-qrs.approvals');
+   Route::post('personal-qrs/{personalQr}/approve', [PersonalQrController::class, 'approve'])
     ->name('personal-qrs.approve');
 
 // Reject (DELETE)
-Route::delete('personal-qrs/{personalQr}/reject', [AdminPersonalQrController::class, 'reject'])
+Route::delete('personal-qrs/{personalQr}/reject', [PersonalQrController::class, 'reject'])
     ->name('personal-qrs.reject');
-    Route::get('personal-qrs/member/{user}', [AdminPersonalQrController::class, 'showMemberQrs'])->name('personal-qrs.member');
+    Route::get('personal-qrs/member/{user}', [PersonalQrController::class, 'showMemberQrs'])->name('personal-qrs.member');
     
-    Route::resource('personal-qrs', AdminPersonalQrController::class)->except(['show']); // Resource umum
+    Route::resource('personal-qrs', PersonalQrController::class)->except(['show']); // Resource umum
 
     // --- 4. API & AJAX DASHBOARD ---
     Route::get('data/stats', [DashboardController::class, 'getAdminData'])->name('data.stats');
