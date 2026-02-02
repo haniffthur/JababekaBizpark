@@ -46,16 +46,12 @@ class MemberController extends Controller
         'password' => 'required|string|min:8', // Hapus confirmed jika tidak ada input password_confirmation di view
         // 'ipl_status' => 'paid', // Ini bukan aturan validasi, hapus dari sini atau masukkan ke logic create
         
-        // WAJIB DIISI (REQUIRED)
-        'plate_1' => 'required|string|max:20|unique:personal_qrs,license_plate',
-        'plate_2' => 'required|string|max:20|unique:personal_qrs,license_plate',
-        'plate_3' => 'required|string|max:20|unique:personal_qrs,license_plate',
-        'plate_4' => 'required|string|max:20|unique:personal_qrs,license_plate',
+        'plate_1' => 'string|nullable|max:20|unique:personal_qrs,license_plate',
+        'plate_2' => 'string|nullable|max:20|unique:personal_qrs,license_plate',
+        'plate_3' => 'string|nullable|max:20|unique:personal_qrs,license_plate',
+        'plate_4' => 'string|nullable|max:20|unique:personal_qrs,license_plate',
     ], [
-        // Custom Error Message (Opsional)
-        'plate_1.required' => 'Plat nomor ke-1 wajib diisi.',
-        'plate_1.unique' => 'Plat nomor ke-1 sudah terdaftar.',
-        // dst...
+       
     ]);
 
     if ($validator->fails()) return back()->withErrors($validator)->withInput();

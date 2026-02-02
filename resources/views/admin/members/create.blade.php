@@ -41,8 +41,7 @@
                                name="plate_{{ $i }}" 
                                class="form-control @error('plate_'.$i) is-invalid @enderror" 
                                placeholder="Contoh: B 1234 ABC"
-                               value="{{ old('plate_'.$i) }}" 
-                               required>
+                               value="{{ old('plate_'.$i) }}">
                         
                         {{-- Error Message juga disesuaikan --}}
                         @error('plate_'.$i) 
