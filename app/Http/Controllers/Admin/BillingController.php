@@ -29,51 +29,70 @@ class BillingController extends Controller
 }
 
     // GENERATE BILLS (Manual Trigger)
-    public function generateBills(Request $request)
+    public function generateBills()
     {
-        $members = User::where('role', 'member')->get();
-        $nominalIPL = (float) Setting::where('key', 'ipl_fee')->value('value') ?? 100000;
-        $count = 0;
+        DB::beginTransaction();
+        try {
+            // 1. Ambil semua member aktif
+            $members = User::where('role', 'member')->get();
+            $billsGenerated = 0;
 
-        DB::transaction(function () use ($members, $nominalIPL, &$count) {
             foreach ($members as $member) {
-                // Cek apakah sudah ada tagihan bulan ini?
-                $exists = Billing::where('user_id', $member->id)
-                            ->whereMonth('created_at', now()->month)
-                            ->whereYear('created_at', now()->year)
-                            ->exists();
+                
+                // 2. Cari data inap truk (DailyCharges) milik member ini yang BELUM ditagihkan
+                // Asumsi: menggunakan relasi melalui truk dan kolom 'ipl_bill_id' masih null
+                $unbilledCharges = \App\Models\DailyCharge::whereHas('truck', function($q) use ($member) {
+                    $q->where('user_id', $member->id);
+                })->whereNull('ipl_bill_id')->get();
 
-                if (!$exists) {
-                    // Ambil keranjang daily charge
-                    $pending = DailyCharge::where('user_id', $member->id)->where('is_billed', false)->get();
-                    $totalInap = $pending->sum('amount');
-                    $grandTotal = $nominalIPL + $totalInap;
+                // Hitung total biaya inap truk
+                $totalInap = $unbilledCharges->sum('amount');
 
-                    $desc = "IPL " . now()->format('F Y');
-                    if ($totalInap > 0) $desc .= " + Inap (Rp " . number_format($totalInap) . ")";
+                // ----------------------------------------------------
+                // BIAYA IPL SEMENTARA DIMATIKAN
+                // $biayaIPL = 150000; // Contoh nominal IPL
+                // $totalTagihan = $totalInap + $biayaIPL;
+                // ----------------------------------------------------
+                
+                // HANYA GUNAKAN TOTAL INAP
+                $totalTagihan = $totalInap;
 
-                    // Buat Billing
-                    $bill = Billing::create([
+                // 3. JIKA ADA TAGIHAN (> 0), MAKA BUAT BILLING BARU
+                // Jika totalnya 0 (karena tidak ada truk inap & IPL dimatikan), lewati member ini.
+                if ($totalTagihan > 0) {
+                    
+                    // Buat Tagihan Induk
+                    $billing = Billing::create([
                         'user_id' => $member->id,
-                        'total_amount' => $grandTotal,
+                        'total_amount' => $totalTagihan,
+                        'description' => 'Tagihan Biaya Inap Truk',
                         'status' => 'unpaid',
-                        'due_date' => now()->addDays(14),
-                        'description' => $desc
+                        'due_date' => now()->addDays(7), // Jatuh tempo 7 hari
                     ]);
 
-                    // Update Keranjang
-                    if ($pending->count() > 0) {
-                        DailyCharge::whereIn('id', $pending->pluck('id'))->update(['is_billed' => true, 'ipl_bill_id' => $bill->id]);
+                    // Masukkan ID Tagihan (ipl_bill_id) ke data inap agar statusnya menjadi "Sudah Ditagih"
+                    foreach($unbilledCharges as $charge) {
+                        $charge->update([
+                            'ipl_bill_id' => $billing->id
+                        ]);
                     }
-
-                    // Blokir Member
-                    $member->update(['ipl_status' => 'unpaid']);
-                    $count++;
+                    
+                    $billsGenerated++;
                 }
             }
-        });
 
-        return back()->with('success', "Berhasil generate $count tagihan.");
+            DB::commit();
+
+            if ($billsGenerated > 0) {
+                return response()->json(['message' => "$billsGenerated Tagihan Inap Truk berhasil dibuat."]);
+            } else {
+                return response()->json(['message' => "Tidak ada tagihan yang perlu dibuat (Semua truk sudah ditagih)."]);
+            }
+
+        } catch (\Exception $e) {
+            DB::rollBack();
+            return response()->json(['message' => 'Gagal membuat tagihan: ' . $e->getMessage()], 500);
+        }
     }
 
     // APPROVE (Verifikasi Pembayaran)

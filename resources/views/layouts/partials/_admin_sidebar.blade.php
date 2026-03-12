@@ -31,7 +31,7 @@
 <li class="nav-item {{ request()->routeIs('admin.qr.approvals.index') ? 'active' : '' }}">
     <a class="nav-link" href="{{ route('admin.qr.approvals.index') }}">
         <i class="fas fa-fw fa-check-circle text-primary"></i>
-        <span class="ml-2">Persetujuan QR</span>
+        <span class="ml-2">Approve QR Truk</span>
 
         {{-- Badge untuk TRUK --}}
         <span id="sidebar-pending-badge" class="badge badge-danger badge-counter ml-1" 
@@ -60,6 +60,7 @@
     </a>
 </li>
 
+
 <hr class="sidebar-divider">
 
 {{-- BAGIAN 3: PENGATURAN --}}
@@ -74,12 +75,12 @@
     </a>
 </li>
 
-<li class="nav-item {{ request()->routeIs('admin.personal-qrs.*') ? 'active' : '' }}">
+<!-- <li class="nav-item {{ request()->routeIs('admin.personal-qrs.*') ? 'active' : '' }}">
     <a class="nav-link" href="{{ route('admin.personal-qrs.index') }}">
         <i class="fas fa-fw fa-id-badge text-primary"></i>
         <span class="ml-2">Manajemen QR Pribadi</span>
     </a>
-</li>
+</li> -->
 
 <li class="nav-item {{ request()->routeIs('admin.settings.*') ? 'active' : '' }}">
     <a class="nav-link" href="{{ route('admin.settings.index') }}">

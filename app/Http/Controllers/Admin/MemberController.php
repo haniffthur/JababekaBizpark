@@ -92,7 +92,7 @@ class MemberController extends Controller
         }
 
         DB::commit();
-        return redirect()->route('admin.members.index')->with('success', 'Member dan 4 QR Code berhasil ditambahkan.');
+        return redirect()->route('admin.members.index')->with('success', 'Member dan QR Code berhasil ditambahkan.');
 
     } catch (\Exception $e) {
         DB::rollBack();

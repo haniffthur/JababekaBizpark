@@ -28,7 +28,7 @@
             </div>
 
             {{-- INPUT 4 KENDARAAN PRIBADI (WAJIB) --}}
-            <h5 class="mt-4 mb-3 text-gray-800 border-bottom pb-2">Data Kendaraan Pribadi (Wajib 4 Unit)</h5>
+            <h5 class="mt-4 mb-3 text-gray-800 border-bottom pb-2">Data Kendaraan Pribadi</h5>
             
             <div class="row">
                 @for ($i = 1; $i <= 4; $i++)
