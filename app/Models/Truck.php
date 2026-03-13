@@ -49,4 +49,9 @@ class Truck extends Model
     {
         return $this->hasMany(GateLog::class);
     }
+    public function qrCode()
+    {
+        // Asumsinya 1 Truk memiliki 1 QR Code (hasOne)
+        return $this->hasOne(QrCode::class);
+    }
 }

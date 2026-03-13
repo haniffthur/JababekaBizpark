@@ -18,7 +18,8 @@ use App\Http\Controllers\Admin\PersonalQrController;
 
 
 // Member Controllers
-use App\Http\Controllers\Member\TruckController;
+// Jika pakai alias:
+use App\Http\Controllers\Admin\TruckController as AdminTruckController;
 use App\Http\Controllers\Member\QrCodeController;
 use App\Http\Controllers\Member\BillingController as MemberBillingController;
 use App\Http\Controllers\Member\GateLogController as MemberGateLogController;
@@ -72,6 +73,12 @@ Route::middleware(['auth', 'role:admin'])->prefix('admin')->name('admin.')->grou
     // 2. ROUTE KHUSUS MENAMBAH QR PRIBADI (EXTRA) UNTUK MEMBER
     Route::get('/members/{member}/personal-qrs/create', [PersonalQrController::class, 'createForMember'])->name('members.personal-qrs.create');
     Route::post('/members/{member}/personal-qrs', [PersonalQrController::class, 'storeForMember'])->name('members.personal-qrs.store');
+    Route::get('/members/{member}/trucks/pdf', [AdminTruckController::class, 'exportPdf'])
+        ->name('members.trucks.pdf'); // <-- BENAR (Jangan pakai 'admin.members...')
+
+    // Route Download PDF QR Pribadi
+    Route::get('/members/{member}/personal-qrs/pdf', [PersonalQrController::class, 'exportPdf'])
+        ->name('members.personal-qrs.pdf'); // <-- BENAR (Jangan pakai 'admin.members...')
 
     
 
@@ -138,7 +145,7 @@ Route::middleware(['auth', 'role:member'])->prefix('member')->name('member.')->g
     
     // --- 1. MANAJEMEN ASET ---
     // Truk
-    Route::resource('trucks', TruckController::class);
+    Route::resource('trucks', AdminTruckController::class);
     
     // QR Code Truk
     Route::get('qrcodes', [QrCodeController::class, 'index'])->name('qrcodes.index');

@@ -184,7 +184,16 @@ class PersonalQrController extends Controller
                          ->with('success', 'QR Pribadi tambahan berhasil dibuat.');
     }
     
-    
+    public function exportPdf(User $member)
+    {
+        // Ambil QR Pribadi
+        $personalQrs = $member->personalQrs;
+
+        $pdf = Pdf::loadView('admin.exports.personal_qr_pdf', compact('member', 'personalQrs'));
+        $pdf->setPaper('a4', 'portrait');
+
+        return $pdf->download('QR_Pribadi_' . $member->name . '.pdf');
+    }
 
   
 }

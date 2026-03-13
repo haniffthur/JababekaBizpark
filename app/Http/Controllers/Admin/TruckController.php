@@ -70,5 +70,19 @@ class TruckController extends Controller
             return back()->with('error', 'Gagal menyimpan: ' . $e->getMessage())->withInput();
         }
     }
+    public function exportPdf(User $member)
+    {
+        // Ambil data truk milik member, load relasi qrCode
+        $trucks = $member->trucks()->with('qrCode')->get();
+
+        // Load View PDF
+        $pdf = Pdf::loadView('admin.exports.truck_qr_pdf', compact('member', 'trucks'));
+        
+        // Set ukuran kertas
+        $pdf->setPaper('a4', 'portrait');
+
+        // Download file
+        return $pdf->download('QR_Truk_' . $member->name . '.pdf');
+    }
     
 }
