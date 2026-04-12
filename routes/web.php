@@ -15,6 +15,7 @@ use App\Http\Controllers\Admin\SettingController;
 use App\Http\Controllers\Admin\AdminQrController; 
 use App\Http\Controllers\Admin\GateMachineController;
 use App\Http\Controllers\Admin\PersonalQrController;
+use App\Http\Controllers\Admin\MasterQrController;
 
 
 // Member Controllers
@@ -132,6 +133,15 @@ Route::delete('personal-qrs/{personalQr}/reject', [PersonalQrController::class, 
     
     // API Ringan untuk Notifikasi Global (Sidebar)
     Route::get('api/check-pending', [DashboardController::class, 'checkPendingQr'])->name('api.check.pending');
+
+
+    // Route QR Master
+Route::get('master-qrs/{master_qr}/download', [MasterQrController::class, 'downloadQr'])
+    ->name('master-qrs.download');
+
+Route::patch('master-qrs/{master_qr}/toggle', [MasterQrController::class, 'toggleStatus'])
+    ->name('master-qrs.toggle');
+Route::resource('master-qrs', MasterQrController::class)->except(['create', 'show', 'edit']);
    
 });
 

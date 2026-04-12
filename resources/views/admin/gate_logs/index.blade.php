@@ -68,7 +68,11 @@
                         <tr>
                             <td>{{ $log->id }}</td>
                             
-                            @if ($log->truck_id)
+                            @if ($log->license_plate === 'CEK MASTER')
+                                {{-- Jika ini Log MASTER QR (VIP) --}}
+                                <td><strong class="text-warning"><i class="fas fa-star"></i> MASTER QR</strong></td>
+                                <td><span class="badge badge-dark">{{ str_replace('Digunakan oleh: ', '', $log->notes) }}</span></td>
+                            @elseif ($log->truck_id)
                                 {{-- Jika ini Log TRUK --}}
                                 <td><strong>{{ $log->truck->license_plate ?? 'N/A' }}</strong></td>
                                 <td>{{ $log->truck->user->name ?? 'N/A' }}</td>
@@ -111,7 +115,7 @@
 @endsection
 
 @push('scripts')
-{{-- 5. Script AJAX Polling (JSON) --}}
+{{-- Script AJAX Polling (JSON) --}}
 <script>
 // Fungsi helper
 function formatRupiah(angka) {
@@ -122,10 +126,12 @@ function formatRupiah(angka) {
     ribuan = ribuan.join('.').split('').reverse().join('');
     return 'Rp ' + ribuan;
 }
+
 function formatTime(dateTime) {
     if (!dateTime) return '-';
     return new Date(dateTime).toLocaleString('id-ID', { year: 'numeric', month: 'numeric', day: 'numeric', hour: '2-digit', minute: '2-digit' });
 }
+
 function getStatusBadge(status) {
     if (!status) return '';
     if (status.includes('Berhasil')) {
@@ -138,7 +144,7 @@ function getStatusBadge(status) {
 }
 
 // Fungsi utama Polling
-function fetchLogData(url = "{{ route('admin.gate.logs.data') }}") { // <-- Panggil rute data
+function fetchLogData(url = "{{ route('admin.gate.logs.data') }}") { 
     var filterData = $('#filter-form').serialize();
 
     // Tambahkan filter ke URL (jika belum ada)
@@ -171,14 +177,28 @@ function fetchLogData(url = "{{ route('admin.gate.logs.data') }}") { // <-- Pang
                 var plateNumber = 'N/A';
                 var memberName = 'N/A';
                 
-                if (log.truck_id && log.truck) {
+                // --- LOGIC BARU: Deteksi Master QR ---
+                if (log.license_plate === 'PLAT MASTER') {
+                    plateNumber = '<strong class="text-warning"><i class="fas fa-star"></i> MASTER QR</strong>';
+                    memberName = '<span class="badge badge-dark">' + (log.notes ? log.notes.replace('Digunakan oleh: ', '') : 'VIP') + '</span>';
+                } 
+                // --- Logika Truk ---
+                else if (log.truck_id && log.truck) {
                     plateNumber = '<strong>' + (log.truck.license_plate || 'N/A') + '</strong>';
                     memberName = (log.truck.user ? log.truck.user.name : 'N/A');
-                } else if (log.user_id && log.user) {
+                } 
+                // --- Logika Pribadi ---
+                else if (log.user_id && log.user) {
                     plateNumber = '<strong>' + (log.license_plate || 'N/A') + '</strong>';
                     memberName = (log.user ? log.user.name : 'N/A');
-                } else if (log.truck_id) {
+                } 
+                // --- Truk Dihapus ---
+                else if (log.truck_id) {
                     plateNumber = '<strong>(Truk Dihapus)</strong>';
+                } 
+                // --- Fallback ---
+                else {
+                    plateNumber = '<strong>' + (log.license_plate || 'N/A') + '</strong>';
                 }
                 
                 var row = '<tr>' +

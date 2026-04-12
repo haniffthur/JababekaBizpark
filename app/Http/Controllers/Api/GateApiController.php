@@ -13,26 +13,46 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Http\JsonResponse;
 use Carbon\Carbon;
+use App\Models\MasterQr;
 
 class GateApiController extends Controller
 {
     public function handleGateAccess(Request $request): JsonResponse
-    {
-        $validator = Validator::make($request->all(), [
-            'qr_code' => 'required|string',
-            'license_plate' => 'required|string',
-            'termno' => 'required|string',
-            'IO' => 'required|in:0,1',
-        ]);
-
-        if ($validator->fails()) {
-            return $this->formatResponse(0, 'Input tidak lengkap', $request);
+{
+    // --- 1. JALUR PINTAS (BYPASS) MASTER QR ---
+    if ($request->license_plate === 'PLAT MASTER') {
+        $masterQr = MasterQr::where('code', $request->qr_code)->where('is_active', true)->first();
+        
+        if ($masterQr) {
+            $status = ($request->IO == 1) ? 'Berhasil Masuk (Master)' : 'Berhasil Keluar (Master)';
+            // Simpan log, plat dikosongkan atau diisi MASTER
+            $this->createGateLog(null, $request, $status, "Digunakan oleh: {$masterQr->name}");
+            
+            // Berikan status = 1 (Buka Gerbang)
+            return $this->formatResponse(1, "Akses VIP:   {$masterQr->name}", $request);
         }
-
-        return ($request->input('IO') == 1) 
-            ? $this->processCheckIn($request) 
-            : $this->processCheckOut($request);
+        
+        // Kalau kodenya gak ada di tabel MasterQr, tolak (kasih status = 0).
+        // Nanti Python bakal tau dan lanjut nunggu kamera LPR.
+        return $this->formatResponse(0, 'Bukan QR Master', $request);
     }
+
+    // --- 2. VALIDASI NORMAL (Truk / Pribadi Biasa) ---
+    $validator = Validator::make($request->all(), [
+        'qr_code' => 'required|string',
+        'license_plate' => 'required|string', // Plat tetap wajib buat user biasa
+        'termno' => 'required|string',
+        'IO' => 'required|in:0,1',
+    ]);
+
+    if ($validator->fails()) {
+        return $this->formatResponse(0, 'Input tidak lengkap', $request);
+    }
+
+    return ($request->input('IO') == 1) 
+        ? $this->processCheckIn($request) 
+        : $this->processCheckOut($request);
+}
 
     private function processCheckIn(Request $request): JsonResponse
     {
@@ -47,7 +67,7 @@ class GateApiController extends Controller
         if ($qrPribadi) return $this->handleQrPribadiCheckIn($request, $qrPribadi, $data['license_plate']);
 
         $this->createGateLog(null, $request, 'Gagal Masuk', 'QR Tidak Dikenal');
-        return $this->formatResponse(0, 'Akses Ditolak', $request);
+        return $this->formatResponse(0, 'maafditolak', $request);
     }
 
     private function processCheckOut(Request $request): JsonResponse
@@ -70,21 +90,21 @@ class GateApiController extends Controller
     private function handleQrTrukCheckIn(Request $request, QrCode $qrCode, string $plat): JsonResponse
     {
         if ($qrCode->status !== 'baru' || !$qrCode->is_approved || $qrCode->truck->license_plate !== $plat) {
-            $this->createGateLog($qrCode->truck_id, $request, 'Gagal Masuk', 'Validasi Gagal');
-            return $this->formatResponse(0, 'AKSES DITOLAK', $request);
+            $this->createGateLog($qrCode->truck_id, $request, 'Gagal Masuk', 'maafDITOLAK');
+            return $this->formatResponse(0, 'maafditolak', $request);
         }
 
         $qrCode->update(['status' => 'aktif']);
         $qrCode->truck->update(['is_inside' => true]);
         
         GateLog::create(['truck_id' => $qrCode->truck_id, 'check_in_at' => now(), 'status' => 'Berhasil Masuk (Truk)']);
-        return $this->formatResponse(1, 'Silakan Masuk', $request);
+        return $this->formatResponse(1, 'SilaknMasuk', $request);
     }
 
     private function handleQrTrukCheckOut(Request $request, QrCode $qrCode, string $plat): JsonResponse
     {
         if ($qrCode->status !== 'aktif' || $qrCode->truck->license_plate !== $plat) {
-            return $this->formatResponse(0, 'Validasi Gagal', $request);
+            return $this->formatResponse(0, 'maafditolak', $request);
         }
 
         $lastLog = GateLog::where('truck_id', $qrCode->truck_id)
@@ -121,40 +141,45 @@ class GateApiController extends Controller
             'status' => 'Berhasil Keluar (Truk)', 'notes' => $notes, 'billing_amount' => 0
         ]);
 
-        return $this->formatResponse(1, 'Sampai Jumpa', $request);
+        return $this->formatResponse(1, 'SampaiJumpa', $request);
     }
 
     // --- LOGIKA PRIBADI ---
     private function handleQrPribadiCheckIn(Request $request, PersonalQr $qr, string $plat): JsonResponse
     {
         if ($qr->user->ipl_status !== 'paid') return $this->formatResponse(0, 'BELUM LUNAS', $request);
-        if ($qr->status !== 'baru' || $qr->license_plate !== $plat) return $this->formatResponse(0, 'Ditolak', $request);
+        if ($qr->status !== 'baru' || $qr->license_plate !== $plat) return $this->formatResponse(0, 'MAAFDitolak', $request);
 
         $qr->update(['status' => 'aktif']);
         Truck::where('license_plate', $plat)->update(['is_inside' => true]); // Update flag global
-        GateLog::create(['user_id' => $qr->user_id, 'license_plate' => $plat, 'check_in_at' => now(), 'status' => 'Berhasil Masuk (Pribadi)']);
+        GateLog::create(['user_id' => $qr->user_id, 'license_plate' => $plat  , 'check_in_at' => now(), 'status' => 'Berhasil Masuk (Pribadi)']);
         
-        return $this->formatResponse(1, 'Silakan Masuk', $request);
+        return $this->formatResponse(1, 'Silaknmasuk', $request);
     }
 
     private function handleQrPribadiCheckOut(Request $request, PersonalQr $qr, string $plat): JsonResponse
     {
-        if ($qr->status !== 'aktif' || $qr->license_plate !== $plat) return $this->formatResponse(0, 'Ditolak', $request);
+        if ($qr->status !== 'aktif' || $qr->license_plate !== $plat) return $this->formatResponse(0, 'MAAFDitolak', $request);
         if ($qr->user->ipl_status !== 'paid') return $this->formatResponse(0, 'BELUM LUNAS', $request);
 
         $qr->update(['status' => 'baru']);
         Truck::where('license_plate', $plat)->update(['is_inside' => false]);
         GateLog::create(['user_id' => $qr->user_id, 'license_plate' => $plat, 'check_out_at' => now(), 'status' => 'Berhasil Keluar (Pribadi)']);
         
-        return $this->formatResponse(1, 'Sampai Jumpa', $request);
+        return $this->formatResponse(1, 'SAMPAIJUMPA', $request);
     }
 
     private function formatResponse($status, $msg, Request $request) {
-        return response()->json([
-            "Status" => $status, "Date" => now()->format('d-m-Y H:i:s'), "Message" => $msg,
-            "QrCode" => $request->input('qr_code'), "Direction" => ($request->input('IO')==1)?'In':'Out'
-        ]);
-    }
+    return response()->json([
+        "Status"    => $status,
+        "Date"      => now()->format('d-m-Y H:i:s'),
+        "Message"   => $msg,
+         "Plat"      => $request->input('license_plate')  ,
+        "QrCode"    => $request->input('qr_code'),
+        // Tambahkan baris ini
+        "Direction" => ($request->input('IO') == 1) ? 'In' : 'Out'
+    ]);
+}
 
     private function createGateLog($tId, $req, $status, $notes, $uId=null) {
         GateLog::create(['truck_id'=>$tId, 'user_id'=>$uId, 'license_plate'=>$req->input('license_plate'), 'status'=>$status, 'notes'=>$notes]);

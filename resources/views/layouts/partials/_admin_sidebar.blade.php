@@ -28,6 +28,13 @@
     </a>
 </li>
 
+<li class="nav-item {{ request()->routeIs('admin.master-qrs.*') ? 'active' : '' }}">
+    <a class="nav-link" href="{{ route('admin.master-qrs.index') }}">
+        <i class="fas fa-fw fa-star text-warning"></i>
+        <span class="ml-2">Manajemen Master QR</span>
+    </a>
+</li>
+
 <li class="nav-item {{ request()->routeIs('admin.qr.approvals.index') ? 'active' : '' }}">
     <a class="nav-link" href="{{ route('admin.qr.approvals.index') }}">
         <i class="fas fa-fw fa-check-circle text-primary"></i>
