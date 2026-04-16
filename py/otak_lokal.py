@@ -12,7 +12,7 @@ CORS(app)
 # ==============================================================================
 # 1. KONFIGURASI DASAR
 # ==============================================================================
-LARAVEL_IP = "192.168.200.100"
+LARAVEL_IP = "192.168.1.100"
 LARAVEL_URL = f"http://{LARAVEL_IP}/api/gate"
 
 # ==============================================================================
@@ -105,23 +105,38 @@ def terima_qr():
     if not req_termno:
         return jsonify(format_response(0, "Terminal ID (termno) Missing", "1"))
 
-    # --- LOGIKA PENENTUAN IO BERDASARKAN TERMNO ---
-    # Ganjil = 1 (Masuk), Genap = 0 (Keluar)
-    # Reader 1, 3 => Masuk ke Ember "1"
-    # Reader 2, 4 => Masuk ke Ember "0"
-    if int(req_termno) % 2 != 0:
-        current_io = "1"
-    else:
-        current_io = "0"
-
-    # Update TermNo terakhir yang aktif di bucket tersebut
+    # Penentuan IO Ganjil/Genap
+    current_io = "1" if int(req_termno) % 2 != 0 else "0"
     BUFFER_GATE[current_io]["termno"] = req_termno
 
     if qr_terbaca:
         arah = "MASUK" if current_io == "1" else "KELUAR"
         print(f"\n[SCANNER {arah}] 📟 QR: {qr_terbaca} (Term: {req_termno})")
         
-        # Simpan ke EMBER yang sesuai
+        # ---------------------------------------------------------
+        # TAMBAHAN LOGIC MASTER QR
+        # ---------------------------------------------------------
+        print("--> Mengecek apakah ini Master QR...")
+        payload_cek = {
+            "termno": req_termno,
+            "IO": current_io,
+            "qr_code": qr_terbaca,
+            "license_plate": "PLAT MASTER" # Tembak pakai password bypass
+        }
+        try:
+            res_master = requests.get(LARAVEL_URL, params=payload_cek, timeout=5)
+            if res_master.status_code == 200:
+                data_master = res_master.json()
+                if data_master.get("Status") == 1:
+                    # INI MASTER QR! LANGSUNG BUKA GERBANG!
+                    print(f"--> [VIP MASTER] Akses Diizinkan. Gerbang Terbuka!")
+                    return jsonify(data_master)
+        except Exception as e:
+            print(f"--> Bypass Error: {e}")
+        # ---------------------------------------------------------
+        
+        # Kalau bukan Master (Status = 0 dari bypass tadi), masuk ke Ember buat nunggu plat
+        print("--> Bukan Master QR, masuk antrean menunggu plat nomor...")
         BUFFER_GATE[current_io]["qr"] = qr_terbaca
         BUFFER_GATE[current_io]["ts_qr"] = time.time()
         
