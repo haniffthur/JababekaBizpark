@@ -38,9 +38,27 @@ class GateApiController extends Controller
     }
 
     // --- 2. VALIDASI NORMAL (Truk / Pribadi Biasa) ---
+   $originalPlate = $request->license_plate;
+    
+    // 1. Coba cari plat yang mirip di tabel Truck
+    $matchedPlate = $this->findSimilarPlate($originalPlate, 'truck');
+    
+    // 2. Jika tidak ketemu di Truck, coba cari di PersonalQr
+    if (!$matchedPlate) {
+        $matchedPlate = $this->findSimilarPlate($originalPlate, 'personal');
+    }
+
+    // 3. Jika ditemukan yang mirip (jarak <= 1), timpa nilai plat di request
+    if ($matchedPlate) {
+        $request->merge(['license_plate' => $matchedPlate]);
+        // Opsional: Log bahwa terjadi koreksi plat
+        // Log::info("Plate corrected from $originalPlate to $matchedPlate");
+    }
+
+    // --- SEKARANG LANJUT KE VALIDASI NORMAL DENGAN PLAT YANG SUDAH DIKOREKSI ---
     $validator = Validator::make($request->all(), [
         'qr_code' => 'required|string',
-        'license_plate' => 'required|string', // Plat tetap wajib buat user biasa
+        'license_plate' => 'required|string', 
         'termno' => 'required|string',
         'IO' => 'required|in:0,1',
     ]);
@@ -148,7 +166,7 @@ class GateApiController extends Controller
     private function handleQrPribadiCheckIn(Request $request, PersonalQr $qr, string $plat): JsonResponse
     {
         if ($qr->user->ipl_status !== 'paid') return $this->formatResponse(0, 'BELUM LUNAS', $request);
-        if ($qr->status !== 'baru' || $qr->license_plate !== $plat) return $this->formatResponse(0, 'MAAFDitolak', $request);
+        if ($qr->status !== 'baru' || $qr->license_plate !== $plat) return $this->formatResponse(0, 'PASSBACK', $request);
 
         $qr->update(['status' => 'aktif']);
         Truck::where('license_plate', $plat)->update(['is_inside' => true]); // Update flag global
@@ -159,7 +177,7 @@ class GateApiController extends Controller
 
     private function handleQrPribadiCheckOut(Request $request, PersonalQr $qr, string $plat): JsonResponse
     {
-        if ($qr->status !== 'aktif' || $qr->license_plate !== $plat) return $this->formatResponse(0, 'MAAFDitolak', $request);
+        if ($qr->status !== 'aktif' || $qr->license_plate !== $plat) return $this->formatResponse(0, 'PASSBACK', $request);
         if ($qr->user->ipl_status !== 'paid') return $this->formatResponse(0, 'BELUM LUNAS', $request);
 
         $qr->update(['status' => 'baru']);
@@ -184,4 +202,32 @@ class GateApiController extends Controller
     private function createGateLog($tId, $req, $status, $notes, $uId=null) {
         GateLog::create(['truck_id'=>$tId, 'user_id'=>$uId, 'license_plate'=>$req->input('license_plate'), 'status'=>$status, 'notes'=>$notes]);
     }
+
+    // Tambahkan di dalam class GateApiController
+
+private function findSimilarPlate($inputPlate, $type = 'truck')
+{
+    $inputPlate = strtoupper(str_replace(' ', '', $inputPlate));
+    
+    // Ambil semua kandidat plat nomor yang aktif dari database
+    if ($type === 'truck') {
+        $candidates = Truck::pluck('license_plate')->toArray();
+    } else {
+        $candidates = PersonalQr::pluck('license_plate')->toArray();
+    }
+
+    foreach ($candidates as $candidate) {
+        $cleanCandidate = strtoupper(str_replace(' ', '', $candidate));
+        
+        // Hitung jarak perbedaan karakter
+        $distance = levenshtein($inputPlate, $cleanCandidate);
+        
+        // Jika perbedaan maksimal 1 digit/karakter
+        if ($distance <= 1) {
+            return $candidate; // Kembalikan plat asli dari database
+        }
+    }
+
+    return null;
+}
 }
