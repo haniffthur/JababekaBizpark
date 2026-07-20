@@ -99,9 +99,10 @@
                                     <td class="align-middle"><strong class="text-uppercase">{{ $qr->license_plate }}</strong></td>
                                     <td class="text-center align-middle">
                                         {{-- Render Gambar QR Code --}}
-                                        <div class="bg-white p-1 d-inline-block border rounded shadow-sm">
-                                            {!! QrCode::size(60)->generate($qr->code) !!}
-                                        </div>
+                                        <div class="bg-white p-2 d-inline-block border rounded shadow-sm text-center">
+    {{-- Lebar batang: 2, Tinggi batang: 40 --}}
+    <img src="data:image/png;base64,{!! DNS1D::getBarcodePNG($qr->code, 'C128', 2, 40) !!}" alt="barcode" />
+</div>
                                     </td>
                                     <td class="align-middle"><code class="text-danger font-weight-bold">{{ $qr->code }}</code></td>
                                     <td class="align-middle">
@@ -161,13 +162,15 @@
                                     </td>
                                     <td class="text-center align-middle py-2">
                                         {{-- Render Gambar QR Code Truk --}}
-                                        @if($truck->qrCode)
-                                            <div class="bg-white p-1 d-inline-block border rounded mb-1 shadow-sm">
-                                                {!! QrCode::size(50)->generate($truck->qrCode->code) !!}
-                                            </div>
-                                            <br>
-                                            <code class="text-primary small font-weight-bold">{{ $truck->qrCode->code }}</code>
-                                        @else
+                                       {{-- Render Gambar Barcode Truk --}}
+@if($truck->qrCode)
+    <div class="bg-white p-2 d-inline-block border rounded mb-1 shadow-sm text-center">
+        {{-- Menggunakan DNS1D untuk Barcode Batang --}}
+        <img src="data:image/png;base64,{!! DNS1D::getBarcodePNG($truck->qrCode->code, 'C128', 1.5, 30) !!}" alt="Barcode Truk" />
+    </div>
+    <br>
+    <!-- <code class="text-primary small font-weight-bold">{{ $truck->qrCode->code }}</code> -->
+@else
                                             <span class="text-muted small font-italic">Belum ada QR</span>
                                         @endif
                                     </td>

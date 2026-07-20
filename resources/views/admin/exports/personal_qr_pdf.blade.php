@@ -99,21 +99,18 @@
             margin-bottom: 20px;
         }
 
-        .qr-wrapper {
-            display: block;
-            width: fit-content;
-            padding: 14px;
-            background: #fafaf8;
-            border: 1px solid #e8e8e2;
-            border-radius: 10px;
-            margin: 0 auto 22px auto;
-        }
-
-        .qr-wrapper img {
-            display: block;
-            width: 180px;
-            height: 180px;
-        }
+        /* Cari dan ganti .qr-wrapper menjadi ini */
+.qr-wrapper { 
+    margin: 15px 0; 
+    text-align: center; 
+    width: 100%; 
+}
+.qr-wrapper img {
+    display: block;
+    margin: 0 auto;
+    width: 80%; /* Batasi maksimal lebar agar tidak menabrak garis putus-putus */
+    height: auto;
+}
 
         .plate-label {
             font-size: 10px;
@@ -179,13 +176,14 @@
                     <div class="vehicle-name">{{ $qr->name }}</div>
 
                     <div class="qr-wrapper">
-                        <img src="data:image/png;base64, {!! base64_encode(QrCode::format('png')->size(180)->generate($qr->code)) !!} ">
+                        {{-- Menggunakan format PNG langsung dari Milon/Barcode (Sangat aman untuk DOMPDF) --}}
+<img src="data:image/png;base64,{!! DNS1D::getBarcodePNG($qr->code, 'C128', 2, 60) !!}" alt="Barcode">
                     </div>
 
                     <div class="plate-label">Plat Nomor</div>
                     <div class="plate-number">{{ $qr->license_plate }}</div>
 
-                    <div class="code-text">{{ $qr->code }}</div>
+                    <!-- <div class="code-text">{{ $qr->code }}</div> -->
                 </div>
             </div>
         @endforeach

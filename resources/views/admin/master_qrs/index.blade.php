@@ -60,9 +60,10 @@
                             <td class="font-weight-bold">{{ $qr->name }}</td>
                             <td class="text-center">
                                 {{-- Render QR Code mini langsung di tabel --}}
-                                <div class="bg-white p-1 border rounded d-inline-block">
-                                    {!! QrCode::size(60)->margin(1)->generate($qr->code) !!}
-                                </div>
+                                <div class="bg-white p-2 d-inline-block border rounded shadow-sm text-center">
+    {{-- Lebar batang: 2, Tinggi batang: 40 --}}
+    <img src="data:image/png;base64,{!! DNS1D::getBarcodePNG($qr->code, 'C128', 2, 40) !!}" alt="barcode" />
+</div>
                             </td>
                             <td>
                                 <code class="text-primary font-weight-bold" style="font-size: 1rem;">{{ $qr->code }}</code>

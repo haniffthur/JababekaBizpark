@@ -86,7 +86,7 @@
         /* QR Section */
         .card-qr {
             display: table-cell;
-            width: 260px;
+            width: 280px; /* Sedikit diperlebar untuk mengakomodasi barcode */
             vertical-align: middle;
             text-align: center;
             padding: 30px 24px;
@@ -100,19 +100,23 @@
             border: 1px solid #e8e8e2;
             border-radius: 12px;
             margin-bottom: 14px;
+            width: 100%; /* Agar frame menyesuaikan lebar kolom */
         }
 
+        /* PERBAIKAN CSS BARCODE DI SINI */
         .qr-frame img {
             display: block;
-            width: 200px;
-            height: 200px;
+            margin: 0 auto;
+            width: 100%; /* Biarkan barcode mengisi penuh area frame secara horizontal */
+            height: auto; 
+            max-height: 70px; /* Batasi tinggi maksimal agar tidak aneh */
         }
 
         .qr-code-text {
             font-family: 'DM Mono', monospace;
-            font-size: 9px;
+            font-size: 11px; /* Sedikit diperbesar agar mudah dibaca */
             color: #c0c0b8;
-            letter-spacing: 0.3px;
+            letter-spacing: 1px;
             word-break: break-all;
             max-width: 210px;
             margin: 0 auto;
@@ -199,7 +203,7 @@
 
     <div class="page-header">
         <div class="org-label">Dokumen Akses Kendaraan</div>
-        <div class="page-title">Daftar QR Code Truk</div>
+        <div class="page-title">Daftar Barcode Truk</div>
         <div class="page-meta">
             Pemilik: <strong>{{ $member->name }}</strong> &nbsp;&middot;&nbsp; {{ $member->email }}
         </div>
@@ -212,9 +216,10 @@
 
             <div class="card-qr">
                 <div class="qr-frame">
-                    <img src="data:image/png;base64, {!! base64_encode(QrCode::format('png')->size(200)->generate($truck->qrCode->code)) !!} ">
+                    {{-- PERBAIKAN PEMANGGILAN BARCODE (DNS1D) --}}
+                    <img src="data:image/png;base64,{!! DNS1D::getBarcodePNG($truck->qrCode->code, 'C128', 2, 60) !!}" alt="Barcode Truk">
                 </div>
-                <div class="qr-code-text">{{ $truck->qrCode->code }}</div>
+                <!-- <div class="qr-code-text">{{ $truck->qrCode->code }}</div> -->
             </div>
 
             <div class="card-info">
@@ -225,7 +230,7 @@
 
                 <div class="divider"></div>
 
-                <div class="driver-label">Nama Supir</div>
+                <div class="info-label">Nama Supir</div>
                 <div class="driver-name">{{ $truck->driver_name ?? '—' }}</div>
             </div>
         </div>
