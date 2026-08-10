@@ -9,6 +9,7 @@ use Illuminate\Support\Str;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\View\View;
 use SimpleSoftwareIO\QrCode\Facades\QrCode;
+use Milon\Barcode\DNS1D;
 
 class MasterQrController extends Controller
 {
@@ -41,21 +42,122 @@ class MasterQrController extends Controller
         return redirect()->back()->with('success', 'Master QR berhasil dibuat.');
     }
 
-    public function downloadQr(MasterQr $masterQr)
-    {
-        // Generate QR Code sebagai PNG
-        $image = QrCode::format('png')
-                 ->size(500)
-                 ->margin(2)
-                 ->errorCorrection('H')
-                 ->generate($masterQr->code);
 
-        $filename = 'QR_MASTER_' . str_replace(' ', '_', strtoupper($masterQr->name)) . '.png';
+public function downloadQr(MasterQr $masterQr)
+{
+    $barcode = new DNS1D();
 
-        return response($image)
-                ->header('Content-Type', 'image/png')
-                ->header('Content-Disposition', 'attachment; filename="' . $filename . '"');
-    }
+    // Generate barcode Code 128
+    $barcodeBase64 = $barcode->getBarcodePNG(
+        $masterQr->code,
+        'C128',
+        2,
+        60
+    );
+
+    // Decode barcode PNG
+    $barcodeImage = imagecreatefromstring(
+        base64_decode($barcodeBase64)
+    );
+
+    // Ukuran barcode
+    $barcodeWidth = imagesx($barcodeImage);
+    $barcodeHeight = imagesy($barcodeImage);
+
+    // Padding
+    $paddingX = 40;
+    $paddingTop = 35;
+    $paddingBottom = 45;
+
+    // Ukuran canvas
+    $canvasWidth = $barcodeWidth + ($paddingX * 2);
+    $canvasHeight = $barcodeHeight + $paddingTop + $paddingBottom;
+
+    // Buat canvas putih
+    $canvas = imagecreatetruecolor(
+        $canvasWidth,
+        $canvasHeight
+    );
+
+    // Warna
+    $white = imagecolorallocate(
+        $canvas,
+        255,
+        255,
+        255
+    );
+
+    $borderColor = imagecolorallocate(
+        $canvas,
+        220,
+        220,
+        220
+    );
+
+    // Background putih
+    imagefill(
+        $canvas,
+        0,
+        0,
+        $white
+    );
+
+    // Border
+    imagerectangle(
+        $canvas,
+        0,
+        0,
+        $canvasWidth - 1,
+        $canvasHeight - 1,
+        $borderColor
+    );
+
+    // Tempel barcode di tengah
+    imagecopy(
+        $canvas,
+        $barcodeImage,
+        $paddingX,
+        $paddingTop,
+        0,
+        0,
+        $barcodeWidth,
+        $barcodeHeight
+    );
+
+    // Bersihkan resource barcode
+    imagedestroy($barcodeImage);
+
+    // Nama file
+    $filename = 'BARCODE_MASTER_' .
+        str_replace(
+            ' ',
+            '_',
+            strtoupper($masterQr->name)
+        ) .
+        '.png';
+
+    // Output PNG
+    ob_start();
+
+    imagepng(
+        $canvas,
+        null,
+        6
+    );
+
+    $image = ob_get_clean();
+
+    // Bersihkan canvas
+    imagedestroy($canvas);
+
+    return response($image)
+        ->header('Content-Type', 'image/png')
+        ->header(
+            'Content-Disposition',
+            'attachment; filename="' . $filename . '"'
+        );
+}
+
     /**
      * Mengupdate nama Master QR.
      */
